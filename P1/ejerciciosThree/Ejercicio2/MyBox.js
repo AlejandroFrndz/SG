@@ -9,7 +9,7 @@ class MyBox extends THREE.Object3D {
     this.createGUI(gui,titleGui);
     
     // Un Mesh se compone de geometría y material
-    var boxGeom = new THREE.BoxGeometry (1,1,1);
+    var boxGeom = new THREE.BoxBufferGeometry (1,1,1);
     // Como material se crea uno a partir de un color
     var boxMat = new THREE.MeshNormalMaterial();
     

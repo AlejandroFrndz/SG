@@ -23,7 +23,7 @@ class MyPawn extends THREE.Object3D{
         this.points.push(new THREE.Vector3(0.3, 1.4, 0.0));
         this.points.push(new THREE.Vector3(0.0, 1.4, 0.0));
 
-        var pawnGeom = new THREE.LatheGeometry(this.points,this.guiControls.resolucion,0,this.guiControls.grados);
+        var pawnGeom = new THREE.LatheBufferGeometry(this.points,this.guiControls.resolucion,0,this.guiControls.grados);
         var lineMat = new THREE.MeshNormalMaterial();
         this.pawn = new THREE.Mesh(pawnGeom,lineMat);
         this.add(this.pawn);

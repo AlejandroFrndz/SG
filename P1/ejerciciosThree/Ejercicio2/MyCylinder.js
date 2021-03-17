@@ -6,7 +6,7 @@ class MyCylinder extends THREE.Object3D {
 
         this.createGUI(gui, titleGui);
 
-        var cylGeom = new THREE.CylinderGeometry(this.guiControls.radioSup,this.guiControls.radioInf,this.guiControls.altura,this.guiControls.resolucion);
+        var cylGeom = new THREE.CylinderBufferGeometry(this.guiControls.radioSup,this.guiControls.radioInf,this.guiControls.altura,this.guiControls.resolucion);
         var cylMat = new THREE.MeshNormalMaterial();
 
         this.cyl = new THREE.Mesh(cylGeom,cylMat);

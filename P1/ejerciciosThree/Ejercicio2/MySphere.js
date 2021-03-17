@@ -6,7 +6,7 @@ class MySphere extends THREE.Object3D{
 
         this.createGUI(gui,titleGui);
 
-        var sphGeom = new THREE.SphereGeometry(1,3,2);
+        var sphGeom = new THREE.SphereBufferGeometry(1,3,2);
         var sphMat = new THREE.MeshNormalMaterial();
 
         this.sphere = new THREE.Mesh(sphGeom,sphMat);

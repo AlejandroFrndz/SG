@@ -6,7 +6,7 @@ class MyIcosahedron extends THREE.Object3D{
 
         this.createGUI(gui,titleGui);
 
-        var icoGeom = new THREE.IcosahedronGeometry(1,0);
+        var icoGeom = new THREE.IcosahedronBufferGeometry(1,0);
         var icoMat = new THREE.MeshNormalMaterial();
 
         this.icosahedron = new THREE.Mesh(icoGeom,icoMat);

@@ -6,7 +6,7 @@ class MyCone extends THREE.Object3D{
 
         this.createGUI(gui,titleGui);
 
-        var coneGeom = new THREE.ConeGeometry(1,1,3);
+        var coneGeom = new THREE.ConeBufferGeometry(1,1,3);
         var coneMat = new THREE.MeshNormalMaterial();
 
         this.cone = new THREE.Mesh(coneGeom,coneMat);

@@ -6,7 +6,7 @@ class MyTorus extends THREE.Object3D{
 
         this.createGUI(gui,titleGui);
 
-        var torGeom = new THREE.TorusGeometry(1,1,3,3);
+        var torGeom = new THREE.TorusBufferGeometry(1,1,3,3);
         var torMat = new THREE.MeshNormalMaterial();
 
         this.torus = new THREE.Mesh(torGeom,torMat);
