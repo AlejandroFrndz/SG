@@ -1,7 +1,7 @@
 import * as THREE from '../libs/three.module.js'
 
 class MyClock extends THREE.Object3D{
-    constructor(){
+    constructor(gui){
         super();
 
         var clockRadius = 4;
@@ -17,6 +17,31 @@ class MyClock extends THREE.Object3D{
             this.add(sphereMesh);
             ang += 30*Math.PI/180;
         }
+
+        var handGeom = new THREE.BoxBufferGeometry(0.2,clockRadius-0.5,0.2);
+        handGeom.translate(0,1.75,0);
+
+        this.hand = new THREE.Mesh(handGeom,new THREE.MeshPhongMaterial({color: 0x000000}));
+        this.add(this.hand);
+
+        this.createGUI(gui);
+
+        this.tiempoAnterior = Date.now();
+    }
+
+    createGUI(gui){
+        this.guiControls = new function(){
+            this.speed = 0;
+        }
+
+        gui.add(this.guiControls,'speed',-12,12,1).name('Velocidad (marcas/s): ');
+    }
+
+    update(){
+        var tiempoActual = Date.now();
+        var deltaTime = (tiempoActual-this.tiempoAnterior)/1000;
+        this.hand.rotation.z += (-1*this.guiControls.speed*THREE.MathUtils.degToRad(30)) * deltaTime;
+        this.tiempoAnterior = tiempoActual;
     }
 }
 

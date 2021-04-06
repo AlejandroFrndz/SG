@@ -36,7 +36,7 @@ class MyScene extends THREE.Scene {
     this.axis = new THREE.AxesHelper (5);
     this.add (this.axis);
 
-    this.clock = new MyClock();
+    this.clock = new MyClock(this.gui);
     this.add(this.clock);
 
   }
@@ -161,6 +161,8 @@ class MyScene extends THREE.Scene {
     
     // Le decimos al renderizador "visualiza la escena que te indico usando la cámara que te estoy pasando"
     this.renderer.render (this, this.getCamera());
+
+    this.clock.update();
     
     // Este método debe ser llamado cada vez que queramos visualizar la escena de nuevo.
     // Literalmente le decimos al navegador: "La próxima vez que haya que refrescar la pantalla, llama al método que te indico".
