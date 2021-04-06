@@ -7,7 +7,7 @@ class Mug extends THREE.Object3D{
 
         var outerCylGeom = new THREE.CylinderGeometry(2,2,3,15);
         var innerCylGeom = new THREE.CylinderGeometry(1.8,1.8,2.8,15);
-        var torusGeom = new THREE.TorusGeometry(1,0.3,15,15,2*Math.PI);
+        var torusGeom = new THREE.TorusGeometry(1,0.3,30,30,2*Math.PI);
 
         torusGeom.translate(-2,0,0);
         innerCylGeom.translate(0,0.2,0);

@@ -98,15 +98,15 @@ class MyPendulums extends THREE.Object3D{
         //Parámetros del Péndulo Mayor
         var folderMayor = gui.addFolder('Péndulo Mayor');
 
-        folderMayor.add(this.guiControls, 'lPenMayor', 5, 10, 1).name('Longitud: ').listen();
-        folderMayor.add(this.guiControls, 'rotPenMayor', -45, 45, 1).name('Rotación: ').listen();
+        folderMayor.add(this.guiControls, 'lPenMayor', 5, 10, 1).name('Longitud: ');
+        folderMayor.add(this.guiControls, 'rotPenMayor', -45, 45, 1).name('Rotación: ');
 
         //Parámetros del Péndulo Menor
         var folderMenor = gui.addFolder('Péndulo Menor');
 
-        folderMenor.add(this.guiControls, 'lPenMenor', 10, 20, 1).name('Longitud: ').listen();
-        folderMenor.add(this.guiControls, 'posPenMenor', 0.1, 0.9, 0.1).name('Posición(%): ').listen();
-        folderMenor.add(this.guiControls, 'rotPenMenor', -45, 45, 1).name("Rotación: ").listen();
+        folderMenor.add(this.guiControls, 'lPenMenor', 10, 20, 1).name('Longitud: ');
+        folderMenor.add(this.guiControls, 'posPenMenor', 0.1, 0.9, 0.1).name('Posición(%): ');
+        folderMenor.add(this.guiControls, 'rotPenMenor', -45, 45, 1).name("Rotación: ");
 
         //Botón de Reseteo
         gui.add(this.guiControls, 'reset').name('Reset');

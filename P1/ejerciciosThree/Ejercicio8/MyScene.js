@@ -5,10 +5,8 @@ import { GUI } from '../libs/dat.gui.module.js'
 import { TrackballControls } from '../libs/TrackballControls.js'
 
 // Clases de mi proyecto
- 
-import { Mug } from './MyMug.js'
-import { Pieza } from './MyPieza.js'
-import { Screw } from './MyScrew.js'
+
+import { MyClock } from './MyClock.js'
 
 /// La clase fachada del modelo
 /**
@@ -38,18 +36,9 @@ class MyScene extends THREE.Scene {
     this.axis = new THREE.AxesHelper (5);
     this.add (this.axis);
 
-    this.mug = new Mug();
-    this.mug.position.x = 10;
-    this.mug.position.y = 1.5;
-    this.add(this.mug);
+    this.clock = new MyClock();
+    this.add(this.clock);
 
-    this.pieza = new Pieza();
-    this.pieza.position.x = -10;
-    this.pieza.position.y = 1.5;
-    this.add(this.pieza);
-
-    this.screw = new Screw();
-    this.add(this.screw);
   }
   
   createCamera () {
@@ -172,7 +161,7 @@ class MyScene extends THREE.Scene {
     
     // Le decimos al renderizador "visualiza la escena que te indico usando la cámara que te estoy pasando"
     this.renderer.render (this, this.getCamera());
-
+    
     // Este método debe ser llamado cada vez que queramos visualizar la escena de nuevo.
     // Literalmente le decimos al navegador: "La próxima vez que haya que refrescar la pantalla, llama al método que te indico".
     // Si no existiera esta línea,  update()  se ejecutaría solo la primera vez.
