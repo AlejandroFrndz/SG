@@ -2,6 +2,7 @@ import * as THREE from '../libs/three.module.js'
 import * as TWEEN from '../libs/tween.esm.js'
 
 const radioBase = 3;
+const steps = 60;
 
 class Bola extends THREE.Object3D{
     constructor(gui){
@@ -65,10 +66,10 @@ class Bola extends THREE.Object3D{
         var y = 1;
         var z = 0;
         var ang = 0;
-        var dang = 3.6;
+        var dang = 360/steps;
         var point;
 
-        for(var i = 0; i < 100; i++){
+        for(var i = 0; i < steps; i++){
             x = Math.cos(THREE.MathUtils.degToRad(ang)) * radioBase * this.guiControls.extension;
             z = Math.sin(THREE.MathUtils.degToRad(ang)) * radioBase;
 
@@ -79,6 +80,18 @@ class Bola extends THREE.Object3D{
         }
 
         this.spline = new THREE.CatmullRomCurve3(this.points,true);
+    }
+
+    updateSpline(){
+        var ang = 0;
+        var dang = 360/steps;
+
+        for(var i = 0; i < steps; i++){
+            this.points[i].setComponent(0,Math.cos(THREE.MathUtils.degToRad(ang)) * radioBase * this.guiControls.extension); 
+            ang += dang;
+        }
+
+        this.spline.points = this.points;
     }
 
     update(){

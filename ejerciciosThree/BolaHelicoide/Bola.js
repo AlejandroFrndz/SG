@@ -32,8 +32,8 @@ class Bola extends THREE.Object3D{
 
         gui.add(this.guiControls, 'radius', 1.0, 6.0, 0.1).name("Radio: ")
         .onChange(function(rad){
-            var cilGeom = new THREE.CylinderBufferGeometry(rad,rad,5,30,30);
-            that.cil.geometry = cilGeom;
+            that.cil.scale.x = rad;
+            that.cil.scale.z = rad;
             that.createSpline();
         });
     }

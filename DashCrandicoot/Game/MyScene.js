@@ -4,10 +4,10 @@
 import * as THREE from '../libs/three.module.js'
 import { GUI } from '../libs/dat.gui.module.js'
 import { TrackballControls } from '../libs/TrackballControls.js'
+import * as TWEEN from '../libs/tween.esm.js'
 
 // Clases de mi proyecto
 
-import { Protagonist } from './Protagonist.js';
 import { Crate } from './Crate.js';
 
 /// La clase fachada del modelo
@@ -47,11 +47,19 @@ class MyScene extends THREE.Scene {
     // Por último creamos el modelo.
     // El modelo puede incluir su parte de la interfaz gráfica de usuario. Le pasamos la referencia a 
     // la gui y el texto bajo el que se agruparán los controles de la interfaz que añada el modelo.
-    this.protagonist = new Protagonist(this.gui, "Animaciones");
-    this.add (this.protagonist);
+    this.crates = [];
 
-    this.crate = new Crate();
-    this.add (this.crate);
+    for(var i = 0; i < 10; i++){
+      this.crates.push(new Crate());
+    }
+
+    for(var i = 0; i < 10; i++){
+      this.crates[i].position.x = i;
+      this.crates[i].position.y = i;
+      this.add(this.crates[i]);
+    }
+
+    //document.getElementById("Messages").innerHTML = "<h2>Hay 1 caja en la escena</h2>";
   }
   
   createCamera () {
@@ -68,6 +76,7 @@ class MyScene extends THREE.Scene {
     this.add (this.camera);
     
     // Para el control de cámara usamos una clase que ya tiene implementado los movimientos de órbita
+    
     this.cameraControl = new TrackballControls (this.camera, this.renderer.domElement);
     
     // Se configuran las velocidades de los movimientos
@@ -203,9 +212,27 @@ class MyScene extends THREE.Scene {
     // Se actualiza la posición de la cámara según su controlador
     this.cameraControl.update();
     
-    // Se actualiza el resto del modelo
-    this.protagonist.update();
+    TWEEN.update();
   }
+
+  /*
+  onMouseDown(event){
+    var mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = 1 - 2 * (event.clientY / window.innerHeight);
+
+    var raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse,this.camera);
+
+    var picked = raycaster.intersectObjects(this.crates,true);
+
+    if(picked.length > 0){
+      document.getElementById("Messages").innerHTML = "<h2>Ya no hay :(</h2>";
+      var selectedObject = picked[0].object;
+      selectedObject.userData.startAnimation();
+    }
+  }
+  */
 }
 
 
@@ -217,6 +244,9 @@ $(function () {
 
   // Se añaden los listener de la aplicación. En este caso, el que va a comprobar cuándo se modifica el tamaño de la ventana de la aplicación.
   window.addEventListener ("resize", () => scene.onWindowResize());
+  //window.addEventListener ("mousedown",(event) => scene.onMouseDown(event));
+
+
   
   // Que no se nos olvide, la primera visualización.
   scene.update();
