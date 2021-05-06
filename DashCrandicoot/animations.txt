@@ -1,0 +1,18 @@
+armature|A-pose
+armature|dead
+armature|dead2 
+armature|gun_idle 
+armature|gun_shot 
+armature|hand_attack 
+armature|hand_lock 
+armature|idle 
+armature|jump_air_loop 
+armature|jump_ascending 
+armature|jump_descending 
+armature|jump_landing 
+armature|jump_start 
+armature|landing crash 
+armature|run 
+armature|T-pose 
+armature|walk 
+armature|walk_side

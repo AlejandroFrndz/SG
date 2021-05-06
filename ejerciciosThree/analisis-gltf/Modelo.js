@@ -7,7 +7,7 @@ class Modelo extends THREE.Object3D {
     this.clock = new THREE.Clock();
     var that = this;
     var loader = new GLTFLoader();
-    loader.load( '../models/gltf/pj.glb', function ( gltf ) {
+    loader.load( '../models/gltf/blake.glb', function ( gltf ) {
       // El modelo está en el atributo  scene
       var model = gltf.scene;
       // Y las animaciones en el atributo  animations

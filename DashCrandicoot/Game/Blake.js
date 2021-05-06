@@ -1,0 +1,464 @@
+import * as THREE from '../libs/three.module.js';
+import { GLTFLoader } from '../libs/GLTFLoader.js';
+
+const OrientationEnum = Object.freeze({"N":1, "NE":2, "E":3, "SE":4, "S":5, "SW":6, "W":7, "NW":8});
+
+class Blake extends THREE.Object3D{
+    constructor(){
+        super();
+        this.clock = new THREE.Clock();
+        var that = this;
+        var loader = new GLTFLoader();
+        loader.load( '../models/gltf/blake_the_adventurer_version_3/blake.glb', function ( gltf ) {
+            // El modelo está en el atributo  scene
+            that.model = gltf.scene;
+            that.model.scale.x = 0.009;
+            that.model.scale.y = 0.009;
+            that.model.scale.z = 0.009;
+            that.model.rotation.y = Math.PI;
+            that.rotationNode = new THREE.Object3D();
+            that.rotationNode.add(that.model);
+            // Y las animaciones en el atributo  animations
+            var animations = gltf.animations;
+            // No olvidarse de colgar el modelo del Object3D de esta instancia de la clase (this)
+            that.add( that.rotationNode );
+            that.createActions(that.model,animations);
+        }, undefined, function ( e ) { console.error( e ); }
+        );
+
+        this.forward = new THREE.Vector3(0,0,1).normalize();
+        this.upwards = new THREE.Vector3(0,1,0).normalize();
+        this.orientation = OrientationEnum.N;
+
+        this.moveForward = false;
+        this.moveBackwards = false;
+        this.moveRight = false;
+        this.moveLeft = false;
+    }
+
+    createActions (model, animations) {
+        // Se crea un mixer para dicho modelo
+        // El mixer es el controlador general de las animaciones del modelo, 
+        //    las lanza, las puede mezclar, etc.
+        // En realidad, cada animación tiene su accionador particular 
+        //    y se gestiona a través de dicho accionador
+        // El mixer es el controlador general de los accionadores particulares
+        this.mixer = new THREE.AnimationMixer (model);
+    
+        // El siguiente diccionario contendrá referencias a los diferentes accionadores particulares 
+        // El diccionario Lo usaremos para dirigirnos a ellos por los nombres de las animaciones que gestionan
+        this.actions = {};
+        
+        for (var i = 0; i < animations.length; i++) {
+            // Se toma una animación de la lista de animaciones del archivo gltf
+            var clip = animations[i];
+            
+            // A partir de dicha animación obtenemos una referencia a su accionador particular
+            var action = this.mixer.clipAction (clip);
+            
+            // Añadimos el accionador al diccionario con el nombre de la animación que controla
+            this.actions[clip.name] = action;
+          
+        }
+
+        this.activeAction = this.actions['armature|idle'];
+        this.activeAction.setLoop(THREE.Repeat);
+        this.activeAction.play();
+    }
+
+    playAnimation(name, repeat, speed){
+        var previousAction = this.activeAction;
+        this.activeAction = this.actions[ name ];
+
+        // La nueva animación se resetea para eliminar cualquier rastro de la última vez que se ejecutara
+        this.activeAction.reset();
+        // Se programa una transición entre la animación actigua y la nueva, se emplea un 10% de lo que dura la animación nueva
+        this.activeAction.crossFadeFrom (previousAction, this.activeAction.time/10 );
+        // Hacemos que la animación se quede en su último frame cuando acabe
+        this.activeAction.clampWhenFinished = true;
+        // Ajustamos su factor de tiempo, modificando ese valor se puede ajustar la velocidad de esta ejecución de la animación
+        this.activeAction.setEffectiveTimeScale( speed );
+        // Ajustamos su peso al máximo, ya que queremos ver la animación en su plenitud
+        this.activeAction.setEffectiveWeight( 1 );
+        // Se establece el número de repeticiones
+        if (repeat) {
+            this.activeAction.setLoop (THREE.Repeat);
+        } else {
+            this.activeAction.setLoop (THREE.LoopOnce);
+        }
+        // Una vez configurado el accionador, se lanza la animación
+        this.activeAction.play();
+    }
+
+    move(tecla){
+        switch(tecla){
+            case 'W':
+                this.moveForward = true;
+                this.moveBackwards = false;
+            break;
+
+            case 'S':
+                this.moveBackwards = true;
+                this.moveForward = false;
+            break;
+
+            case 'D':
+                this.moveRight = true;
+                this.moveLeft = false;
+            break;
+
+            case 'A':
+                this.moveLeft = true;
+                this.moveRight = false;
+            break;
+        }
+    }
+
+    stop(tecla){
+        switch(tecla){
+            case 'W':
+                this.moveForward = false;
+            break;
+
+            case 'S':
+                this.moveBackwards = false;
+            break;
+
+            case 'D':
+                this.moveRight = false;
+            break;
+
+            case 'A':
+                this.moveLeft = false;
+            break;
+        }
+    }
+
+    
+    checkAnimation(){
+        if(this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight){
+            if(this.activeAction != this.actions['armature|run']){
+                this.playAnimation('armature|run',true,1);
+            }
+        }
+        else{
+            if(this.activeAction != this.actions['armature|idle']){
+                this.playAnimation('armature|idle',true,1);
+            }
+        }
+    }
+
+    checkDesiredOrientation(){
+        if(this.moveForward && this.moveRight){
+            return OrientationEnum.NE;
+        }
+        if(this.moveForward && this.moveLeft){
+            return OrientationEnum.NW;
+        }
+        if(this.moveBackwards && this.moveRight){
+            return OrientationEnum.SE;
+        }
+        if(this.moveBackwards && this.moveLeft){
+            return OrientationEnum.SW;
+        }
+        if(this.moveForward){
+            return OrientationEnum.N;
+        }
+        if(this.moveBackwards){
+            return OrientationEnum.S;
+        }
+        if(this.moveRight){
+            return OrientationEnum.E;
+        }
+        if(this.moveLeft){
+            return OrientationEnum.W;
+        }
+    }
+
+    computeDegrees(desiredOrientation){
+        var degrees;
+        switch(this.orientation){
+            case OrientationEnum.S:
+                switch(desiredOrientation){
+                    case OrientationEnum.SE:
+                        degrees = 45;
+                    break;
+
+                    case OrientationEnum.E:
+                        degrees = 90;
+                    break;
+
+                    case OrientationEnum.NE:
+                        degrees = 135;
+                    break;
+
+                    case OrientationEnum.N:
+                        degrees = 180;
+                    break;
+
+                    case OrientationEnum.NW:
+                        degrees = 225;
+                    break;
+                    
+                    case OrientationEnum.W:
+                        degrees = 270;
+                    break;
+
+                    case OrientationEnum.SW:
+                        degrees = 315;
+                    break;
+                }
+            break;
+
+            case OrientationEnum.SE:
+                switch(desiredOrientation){
+                    case OrientationEnum.E:
+                        degrees = 45;
+                    break;
+
+                    case OrientationEnum.NE:
+                        degrees = 90;
+                    break;
+
+                    case OrientationEnum.N:
+                        degrees = 135;
+                    break;
+
+                    case OrientationEnum.NW:
+                        degrees = 180;
+                    break;
+
+                    case OrientationEnum.W:
+                        degrees = 225;
+                    break;
+                    
+                    case OrientationEnum.SW:
+                        degrees = 270;
+                    break;
+
+                    case OrientationEnum.S:
+                        degrees = 315;
+                    break;
+                }
+            break;
+
+            case OrientationEnum.E:
+                switch(desiredOrientation){
+                    case OrientationEnum.NE:
+                        degrees = 45;
+                    break;
+
+                    case OrientationEnum.N:
+                        degrees = 90;
+                    break;
+
+                    case OrientationEnum.NW:
+                        degrees = 135;
+                    break;
+
+                    case OrientationEnum.W:
+                        degrees = 180;
+                    break;
+
+                    case OrientationEnum.SW:
+                        degrees = 225;
+                    break;
+                    
+                    case OrientationEnum.S:
+                        degrees = 270;
+                    break;
+
+                    case OrientationEnum.SE:
+                        degrees = 315;
+                    break;
+                }
+            break;
+
+            case OrientationEnum.NE:
+                switch(desiredOrientation){
+                    case OrientationEnum.N:
+                        degrees = 45;
+                    break;
+
+                    case OrientationEnum.NW:
+                        degrees = 90;
+                    break;
+
+                    case OrientationEnum.W:
+                        degrees = 135;
+                    break;
+
+                    case OrientationEnum.SW:
+                        degrees = 180;
+                    break;
+
+                    case OrientationEnum.S:
+                        degrees = 225;
+                    break;
+                    
+                    case OrientationEnum.SE:
+                        degrees = 270;
+                    break;
+
+                    case OrientationEnum.E:
+                        degrees = 315;
+                    break;
+                }
+            break;
+
+            case OrientationEnum.N:
+                switch(desiredOrientation){
+                    case OrientationEnum.NW:
+                        degrees = 45;
+                    break;
+
+                    case OrientationEnum.W:
+                        degrees = 90;
+                    break;
+
+                    case OrientationEnum.SW:
+                        degrees = 135;
+                    break;
+
+                    case OrientationEnum.S:
+                        degrees = 180;
+                    break;
+
+                    case OrientationEnum.SE:
+                        degrees = 225;
+                    break;
+                    
+                    case OrientationEnum.E:
+                        degrees = 270;
+                    break;
+
+                    case OrientationEnum.NE:
+                        degrees = 315;
+                    break;
+                }
+            break;
+
+            case OrientationEnum.NW:
+                switch(desiredOrientation){
+                    case OrientationEnum.W:
+                        degrees = 45;
+                    break;
+
+                    case OrientationEnum.SW:
+                        degrees = 90;
+                    break;
+
+                    case OrientationEnum.S:
+                        degrees = 135;
+                    break;
+
+                    case OrientationEnum.SE:
+                        degrees = 180;
+                    break;
+
+                    case OrientationEnum.E:
+                        degrees = 225;
+                    break;
+                    
+                    case OrientationEnum.NE:
+                        degrees = 270;
+                    break;
+
+                    case OrientationEnum.N:
+                        degrees = 315;
+                    break;
+                }
+            break;
+
+            case OrientationEnum.W:
+                switch(desiredOrientation){
+                    case OrientationEnum.SW:
+                        degrees = 45;
+                    break;
+
+                    case OrientationEnum.S:
+                        degrees = 90;
+                    break;
+
+                    case OrientationEnum.SE:
+                        degrees = 135;
+                    break;
+
+                    case OrientationEnum.E:
+                        degrees = 180;
+                    break;
+
+                    case OrientationEnum.NE:
+                        degrees = 225;
+                    break;
+                    
+                    case OrientationEnum.N:
+                        degrees = 270;
+                    break;
+
+                    case OrientationEnum.NW:
+                        degrees = 315;
+                    break;
+                }
+            break;
+
+            case OrientationEnum.SW:
+                switch(desiredOrientation){
+                    case OrientationEnum.S:
+                        degrees = 45;
+                    break;
+
+                    case OrientationEnum.SE:
+                        degrees = 90;
+                    break;
+
+                    case OrientationEnum.E:
+                        degrees = 135;
+                    break;
+
+                    case OrientationEnum.NE:
+                        degrees = 180;
+                    break;
+
+                    case OrientationEnum.N:
+                        degrees = 225;
+                    break;
+                    
+                    case OrientationEnum.NW:
+                        degrees = 270;
+                    break;
+
+                    case OrientationEnum.W:
+                        degrees = 315;
+                    break;
+                }
+            break;
+        }
+
+        return degrees;
+    }
+
+    setOrientation(){
+        var desiredOrientation = this.checkDesiredOrientation();
+
+        if(desiredOrientation != this.orientation){
+            var degrees = this.computeDegrees(desiredOrientation);
+            this.model.rotateOnAxis(this.model.up,THREE.MathUtils.degToRad(degrees));
+            this.orientation = desiredOrientation;
+        }
+    }
+
+    update () {
+        if(this.model){
+            this.checkAnimation();
+            var dt = this.clock.getDelta();
+            this.mixer.update (dt);
+            if(this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight){
+                this.setOrientation();
+                this.model.translateOnAxis(this.forward,0.1);
+            }
+        }
+    }
+}
+
+export { Blake };

@@ -9,6 +9,8 @@ import * as TWEEN from '../libs/tween.esm.js'
 // Clases de mi proyecto
 
 import { Crate } from './Crate.js';
+import { MoveTest } from './movementTest.js';
+import { Blake } from './Blake.js'
 
 /// La clase fachada del modelo
 /**
@@ -49,17 +51,16 @@ class MyScene extends THREE.Scene {
     // la gui y el texto bajo el que se agruparán los controles de la interfaz que añada el modelo.
     this.crates = [];
 
-    for(var i = 0; i < 10; i++){
-      this.crates.push(new Crate());
-    }
-
-    for(var i = 0; i < 10; i++){
-      this.crates[i].position.x = i;
-      this.crates[i].position.y = i;
-      this.add(this.crates[i]);
-    }
+    this.crate = new Crate();
+    this.add(this.crate);
+    
+    
+    this.blake = new Blake();
+    this.add(this.blake);
 
     //document.getElementById("Messages").innerHTML = "<h2>Hay 1 caja en la escena</h2>";
+
+    this.oldKeyDown = 'P';
   }
   
   createCamera () {
@@ -211,6 +212,8 @@ class MyScene extends THREE.Scene {
     
     // Se actualiza la posición de la cámara según su controlador
     this.cameraControl.update();
+
+    this.blake.update();
     
     TWEEN.update();
   }
@@ -233,6 +236,22 @@ class MyScene extends THREE.Scene {
     }
   }
   */
+
+  onKeyDown(event){
+    var x = event.wich || event.keyCode;
+    var tecla = String.fromCharCode(x);
+    this.blake.move(tecla);
+
+    if(tecla == "X"){
+      this.crate.startAnimation();
+    }
+  }
+
+  onKeyUp(event){
+    var x = event.wich || event.keyCode;
+    var tecla = String.fromCharCode(x);
+    this.blake.stop(tecla);
+  }
 }
 
 
@@ -245,8 +264,8 @@ $(function () {
   // Se añaden los listener de la aplicación. En este caso, el que va a comprobar cuándo se modifica el tamaño de la ventana de la aplicación.
   window.addEventListener ("resize", () => scene.onWindowResize());
   //window.addEventListener ("mousedown",(event) => scene.onMouseDown(event));
-
-
+  window.addEventListener("keydown", (event) => scene.onKeyDown(event));
+  window.addEventListener("keyup", (event) => scene.onKeyUp(event));
   
   // Que no se nos olvide, la primera visualización.
   scene.update();
