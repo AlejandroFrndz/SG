@@ -9,7 +9,6 @@ import * as TWEEN from '../libs/tween.esm.js'
 // Clases de mi proyecto
 
 import { Crate } from './Crate.js';
-import { MoveTest } from './movementTest.js';
 import { Blake } from './Blake.js'
 
 /// La clase fachada del modelo
@@ -60,7 +59,6 @@ class MyScene extends THREE.Scene {
 
     //document.getElementById("Messages").innerHTML = "<h2>Hay 1 caja en la escena</h2>";
 
-    this.oldKeyDown = 'P';
   }
   
   createCamera () {
@@ -86,6 +84,7 @@ class MyScene extends THREE.Scene {
     this.cameraControl.panSpeed = 0.5;
     // Debe orbitar con respecto al punto de mira de la cámara
     this.cameraControl.target = look;
+    this.cameraControl.enabled = false;
   }
   
   createGround () {
@@ -214,8 +213,27 @@ class MyScene extends THREE.Scene {
     this.cameraControl.update();
 
     this.blake.update();
-    
+    if(this.checkColisions()){
+      if(this.blake.jumping && this.blake.jumpNode.position.y > 0.7){
+        this.crate.startAnimation();
+      }
+      this.blake.trasladar(-0.1);
+    }
+
     TWEEN.update();
+  }
+
+  checkColisions(){
+    if(this.crate.breaking){
+      return false;
+    }
+    var blakePos = new THREE.Vector3();
+    this.blake.model.getWorldPosition(blakePos);
+    var cratePos = new THREE.Vector3();
+    this.crate.getWorldPosition(cratePos);
+
+    var distance = blakePos.distanceTo(cratePos);
+    return distance < 1;
   }
 
   /*
@@ -239,16 +257,32 @@ class MyScene extends THREE.Scene {
 
   onKeyDown(event){
     var x = event.wich || event.keyCode;
+
+    if(x == 17){
+      this.cameraControl.enabled = true;
+      return;
+    }
+
     var tecla = String.fromCharCode(x);
+    
+
+
+    if(tecla == " "){
+      this.blake.jump();
+    }
+
     this.blake.move(tecla);
 
-    if(tecla == "X"){
-      this.crate.startAnimation();
-    }
   }
 
   onKeyUp(event){
     var x = event.wich || event.keyCode;
+
+    if(x == 17){
+      this.cameraControl.enabled = false;
+      return;
+    }
+
     var tecla = String.fromCharCode(x);
     this.blake.stop(tecla);
   }

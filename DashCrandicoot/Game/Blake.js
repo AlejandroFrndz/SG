@@ -1,5 +1,6 @@
 import * as THREE from '../libs/three.module.js';
 import { GLTFLoader } from '../libs/GLTFLoader.js';
+import * as TWEEN from '../libs/tween.esm.js';
 
 const OrientationEnum = Object.freeze({"N":1, "NE":2, "E":3, "SE":4, "S":5, "SW":6, "W":7, "NW":8});
 
@@ -18,11 +19,14 @@ class Blake extends THREE.Object3D{
             that.model.rotation.y = Math.PI;
             that.rotationNode = new THREE.Object3D();
             that.rotationNode.add(that.model);
+            that.jumpNode = new THREE.Object3D();
+            that.jumpNode.add(that.rotationNode);
             // Y las animaciones en el atributo  animations
             var animations = gltf.animations;
             // No olvidarse de colgar el modelo del Object3D de esta instancia de la clase (this)
-            that.add( that.rotationNode );
+            that.add( that.jumpNode);
             that.createActions(that.model,animations);
+            that.createJumpTween();
         }, undefined, function ( e ) { console.error( e ); }
         );
 
@@ -34,6 +38,72 @@ class Blake extends THREE.Object3D{
         this.moveBackwards = false;
         this.moveRight = false;
         this.moveLeft = false;
+
+    }
+
+    createJumpTween(){
+        this.jumps = 1;
+        this.trasladable = true;
+        var originStart = {y : 0};
+        var destinyStart = {y : 0.2};
+
+        var that = this;
+
+        this.jumpStart = new TWEEN.Tween(originStart)
+        .to(destinyStart,333)
+        .easing(TWEEN.Easing.Quadratic.In)
+        .onStart(function(){
+            that.jumping = true;
+            that.playAnimation("armature|jump_start",false,1);
+        })
+        .onComplete(function(){
+            that.trasladable = true;
+        });
+
+        var originAsc = {y : 0};
+        var destinyAsc = {y : 2};
+
+        this.jumpAsc = new TWEEN.Tween(originAsc)
+        .to(destinyAsc,500)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onStart(function(){
+            that.playAnimation("armature|jump_ascending",true,1);
+        })
+        .onUpdate(function(){
+            that.jumpNode.position.y = originAsc.y;
+        });
+        
+        var originDesc = {y : 2};
+        var destinyDesc = {y : 0};
+
+        this.jumpDesc = new TWEEN.Tween(originDesc)
+        .to(destinyDesc,500)
+        .easing(TWEEN.Easing.Quadratic.In)
+        .onStart(function(){
+            that.playAnimation("armature|jump_descending",true,1);
+        })
+        .onUpdate(function(){
+            that.jumpNode.position.y = originDesc.y;
+        });
+
+        var originLand = {y : 0.2};
+        var destinyLand = {y : 0};
+
+        this.jumpLand = new TWEEN.Tween(originLand)
+        .to(destinyLand,500)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onStart(function(){
+            that.playAnimation("armature|jump_landing",false,1);
+            that.trasladable = false;
+        })
+        .onComplete(function(){
+            that.jumping = false;
+            that.trasladable = true;
+        })
+
+        this.jumpStart.chain(this.jumpAsc);
+        this.jumpAsc.chain(this.jumpDesc);
+        this.jumpDesc.chain(this.jumpLand);
     }
 
     createActions (model, animations) {
@@ -136,13 +206,14 @@ class Blake extends THREE.Object3D{
 
     
     checkAnimation(){
-        if(this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight){
+        if(!this.jumping && (this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight)){
             if(this.activeAction != this.actions['armature|run']){
                 this.playAnimation('armature|run',true,1);
             }
         }
         else{
-            if(this.activeAction != this.actions['armature|idle']){
+            
+            if(!this.jumping && this.activeAction != this.actions['armature|idle']){
                 this.playAnimation('armature|idle',true,1);
             }
         }
@@ -448,6 +519,11 @@ class Blake extends THREE.Object3D{
         }
     }
 
+    trasladar(d){
+        if(this.trasladable)
+            this.model.translateOnAxis(this.forward,d);
+    }
+
     update () {
         if(this.model){
             this.checkAnimation();
@@ -455,8 +531,14 @@ class Blake extends THREE.Object3D{
             this.mixer.update (dt);
             if(this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight){
                 this.setOrientation();
-                this.model.translateOnAxis(this.forward,0.1);
+                this.trasladar(0.1);
             }
+        }
+    }
+
+    jump(){
+        if(!this.jumping){
+            this.jumpStart.start();
         }
     }
 }

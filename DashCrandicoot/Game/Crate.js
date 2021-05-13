@@ -71,9 +71,14 @@ class Crate extends THREE.Object3D{
 
         var that = this;
 
+        this.breaking = false;
+
         this.animation = new TWEEN.Tween(origin)
         .to(destiny,500)
         .easing(TWEEN.Easing.Quadratic.In)
+        .onStart(function(){
+          that.breaking = true;
+        })
         .onUpdate(function(){
           that.faceTop.position.y = origin.top;
           that.animRight.rotation.x = THREE.MathUtils.degToRad(origin.rot);
@@ -92,7 +97,9 @@ class Crate extends THREE.Object3D{
       }
 
       startAnimation(){
-        this.animation.start();
+        if(!this.breaking){
+          this.animation.start();
+        }
       }
 
       update(){
