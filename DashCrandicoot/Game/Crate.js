@@ -71,13 +71,13 @@ class Crate extends THREE.Object3D{
 
         var that = this;
 
-        this.breaking = false;
+        this.broken = false;
 
         this.animation = new TWEEN.Tween(origin)
         .to(destiny,500)
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
-          that.breaking = true;
+          that.broken = true;
         })
         .onUpdate(function(){
           that.faceTop.position.y = origin.top;
@@ -97,7 +97,7 @@ class Crate extends THREE.Object3D{
       }
 
       startAnimation(){
-        if(!this.breaking){
+        if(!this.broken){
           this.animation.start();
         }
       }

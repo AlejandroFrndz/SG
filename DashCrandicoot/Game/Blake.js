@@ -9,6 +9,7 @@ class Blake extends THREE.Object3D{
         super();
         this.clock = new THREE.Clock();
         var that = this;
+        this.loaded = false;
         var loader = new GLTFLoader();
         loader.load( '../models/gltf/blake_the_adventurer_version_3/blake.glb', function ( gltf ) {
             // El modelo está en el atributo  scene
@@ -27,6 +28,7 @@ class Blake extends THREE.Object3D{
             that.add( that.jumpNode);
             that.createActions(that.model,animations);
             that.createJumpTween();
+            that.loaded = true;
         }, undefined, function ( e ) { console.error( e ); }
         );
 

@@ -10,6 +10,7 @@ import * as TWEEN from '../libs/tween.esm.js'
 
 import { Crate } from './Crate.js';
 import { Blake } from './Blake.js'
+import { Fruit } from './Fruit.js';
 
 /// La clase fachada del modelo
 /**
@@ -45,6 +46,10 @@ class MyScene extends THREE.Scene {
     this.add (this.axis);
     
     
+    this.fruitCount = 0;
+    this.gameUI = document.getElementById("Messages");
+    this.gameUI.innerHTML = this.fruitCount;
+
     // Por último creamos el modelo.
     // El modelo puede incluir su parte de la interfaz gráfica de usuario. Le pasamos la referencia a 
     // la gui y el texto bajo el que se agruparán los controles de la interfaz que añada el modelo.
@@ -57,7 +62,8 @@ class MyScene extends THREE.Scene {
     this.blake = new Blake();
     this.add(this.blake);
 
-    //document.getElementById("Messages").innerHTML = "<h2>Hay 1 caja en la escena</h2>";
+    this.fruit = new Fruit(this.fruitCount);
+    this.add(this.fruit);
 
   }
   
@@ -221,10 +227,11 @@ class MyScene extends THREE.Scene {
     }
 
     TWEEN.update();
+    this.gameUI.innerHTML = this.fruitCount;
   }
 
   checkColisions(){
-    if(this.crate.breaking){
+    if(this.crate.broken || !this.blake.loaded){
       return false;
     }
     var blakePos = new THREE.Vector3();
@@ -265,10 +272,16 @@ class MyScene extends THREE.Scene {
 
     var tecla = String.fromCharCode(x);
     
-
+    if(tecla == "X"){
+      this.fruitCount++;
+      if(this.fruitCount == 1)
+        this.fruit.pickUp();
+      return;
+    }
 
     if(tecla == " "){
       this.blake.jump();
+      return;
     }
 
     this.blake.move(tecla);
