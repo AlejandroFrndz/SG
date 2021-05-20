@@ -8,9 +8,10 @@ import * as TWEEN from '../libs/tween.esm.js'
 
 // Clases de mi proyecto
 
-import { Crate } from './Crate.js';
+import { Crate } from './Crate.js'
 import { Blake } from './Blake.js'
-import { Fruit } from './Fruit.js';
+import { Fruit } from './Fruit.js'
+import { Platform } from './Platform.js'
 
 /// La clase fachada del modelo
 /**
@@ -50,21 +51,36 @@ class MyScene extends THREE.Scene {
     this.gameUI = document.getElementById("Messages");
     this.gameUI.innerHTML = this.fruitCount;
 
-    // Por último creamos el modelo.
-    // El modelo puede incluir su parte de la interfaz gráfica de usuario. Le pasamos la referencia a 
-    // la gui y el texto bajo el que se agruparán los controles de la interfaz que añada el modelo.
+    //Cajas
     this.crates = [];
+    var crate = new Crate();
+    this.add(crate);
+    crate.position.set(2,0,0);
+    this.crates.push(crate);
+    crate = new Crate();
+    this.add(crate);
+    this.crates.push(crate);
 
-    this.crate = new Crate();
-    this.add(this.crate);
-    
-    
+    //Blake
     this.blake = new Blake();
     this.add(this.blake);
 
-    this.fruit = new Fruit(this.fruitCount);
-    this.add(this.fruit);
+    //Frutas
+    this.fruits = [];
+    var fruit = new Fruit();
+    this.add(fruit);
+    this.fruits.push(fruit);
+    fruit = new Fruit();
+    this.add(fruit);
+    this.fruits.push(fruit);
+    fruit.position.set(-3,1,2);
 
+    this.platform = new Platform();
+    this.add(this.platform);
+
+    //Vectores para la deteccion de colisiones
+    this.blakePos = new THREE.Vector3();
+    this.objPos = new THREE.Vector3();
   }
   
   createCamera () {
@@ -219,48 +235,76 @@ class MyScene extends THREE.Scene {
     this.cameraControl.update();
 
     this.blake.update();
-    if(this.checkColisions()){
-      if(this.blake.jumping && this.blake.jumpNode.position.y > 0.7){
-        this.crate.startAnimation();
+    for(var i = 0; i < this.crates.length; i++){
+      if(this.crates[i] != null){
+        if(this.checkColisionCrates(this.crates[i])){
+          if(this.blake.jumping && this.blake.jumpNode.position.y > 0.6){
+            this.crates[i].startAnimation();
+            this.blake.bounce();
+            this.crates[i] = null;
+          }
+          else{
+            this.blake.trasladar(-0.1);
+          }
+        }
       }
-      this.blake.trasladar(-0.1);
+    }
+
+    for(var i = 0; i < this.fruits.length; i++){
+      if(this.fruits[i] != null){
+        if(this.checkColisionFruits(this.fruits[i])){
+          this.fruits[i].pickUp();
+          this.fruits[i] = null;
+          this.fruitCount++;
+          break;
+        }
+      }
+    }
+
+    if(!this.checkColisionPlatforms(this.platform) && !this.blake.jumping){
+      this.blake.fall();
     }
 
     TWEEN.update();
     this.gameUI.innerHTML = this.fruitCount;
   }
 
-  checkColisions(){
-    if(this.crate.broken || !this.blake.loaded){
+  checkColisionCrates(crate){
+    if(crate.broken || !this.blake.loaded){
       return false;
     }
-    var blakePos = new THREE.Vector3();
-    this.blake.model.getWorldPosition(blakePos);
-    var cratePos = new THREE.Vector3();
-    this.crate.getWorldPosition(cratePos);
 
-    var distance = blakePos.distanceTo(cratePos);
-    return distance < 1;
+    this.blake.model.getWorldPosition(this.blakePos);
+    crate.getWorldPosition(this.objPos);
+
+    var distance = this.blakePos.distanceTo(this.objPos);
+    return distance < 0.8;
   }
 
-  /*
-  onMouseDown(event){
-    var mouse = new THREE.Vector2();
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = 1 - 2 * (event.clientY / window.innerHeight);
-
-    var raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse,this.camera);
-
-    var picked = raycaster.intersectObjects(this.crates,true);
-
-    if(picked.length > 0){
-      document.getElementById("Messages").innerHTML = "<h2>Ya no hay :(</h2>";
-      var selectedObject = picked[0].object;
-      selectedObject.userData.startAnimation();
+  checkColisionFruits(fruit){
+    if(!this.blake.loaded){
+      return false;
     }
+
+    this.blake.model.getWorldPosition(this.blakePos);
+    fruit.getWorldPosition(this.objPos);
+
+    var distance = this.blakePos.distanceTo(this.objPos);
+    return distance < 0.6;
   }
-  */
+
+  checkColisionPlatforms(platform){
+    if(!this.blake.loaded){
+      return true;
+    }
+
+    return (
+      (this.blake.model.position.x <= (platform.position.x + (2.5 * 1.1))) &&
+      (this.blake.model.position.x >= (platform.position.x - (2.5 * 1.1))) &&
+      (this.blake.model.position.z <= (platform.position.z + (2.5 * 1.1))) &&
+      (this.blake.model.position.z >= (platform.position.z - (2.5 * 1.1)))
+      );
+  }
 
   onKeyDown(event){
     var x = event.wich || event.keyCode;
@@ -273,10 +317,7 @@ class MyScene extends THREE.Scene {
     var tecla = String.fromCharCode(x);
     
     if(tecla == "X"){
-      this.fruitCount++;
-      if(this.fruitCount == 1)
-        this.fruit.pickUp();
-      return;
+      this.blake.fall();
     }
 
     if(tecla == " "){

@@ -1,6 +1,7 @@
 import * as THREE from '../libs/three.module.js';
 import { GLTFLoader } from '../libs/GLTFLoader.js';
 import * as TWEEN from '../libs/tween.esm.js';
+import { Marker } from './Marker.js';
 
 const OrientationEnum = Object.freeze({"N":1, "NE":2, "E":3, "SE":4, "S":5, "SW":6, "W":7, "NW":8});
 
@@ -22,12 +23,14 @@ class Blake extends THREE.Object3D{
             that.rotationNode.add(that.model);
             that.jumpNode = new THREE.Object3D();
             that.jumpNode.add(that.rotationNode);
+            that.bounceNode = new THREE.Object3D();
+            that.bounceNode.add(that.jumpNode);
             // Y las animaciones en el atributo  animations
             var animations = gltf.animations;
             // No olvidarse de colgar el modelo del Object3D de esta instancia de la clase (this)
-            that.add( that.jumpNode);
+            that.add( that.bounceNode);
             that.createActions(that.model,animations);
-            that.createJumpTween();
+            that.createTweens();
             that.loaded = true;
         }, undefined, function ( e ) { console.error( e ); }
         );
@@ -41,25 +44,32 @@ class Blake extends THREE.Object3D{
         this.moveRight = false;
         this.moveLeft = false;
 
+
+        this.jumping = false;
+        this.boucing = false;
+        this.falling = false;
+        this.idleable = true;
+
+        this.marker = new Marker();
+        this.add(this.marker);
     }
 
-    createJumpTween(){
+    createTweens(){
+        var that = this;
+
+        //#region  Salto  
         this.jumps = 1;
         this.trasladable = true;
         var originStart = {y : 0};
         var destinyStart = {y : 0.2};
 
-        var that = this;
-
         this.jumpStart = new TWEEN.Tween(originStart)
-        .to(destinyStart,333)
+        .to(destinyStart,166)
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
             that.jumping = true;
-            that.playAnimation("armature|jump_start",false,1);
-        })
-        .onComplete(function(){
-            that.trasladable = true;
+            that.idleable = false;
+            that.playAnimation("armature|jump_start",false,2);
         });
 
         var originAsc = {y : 0};
@@ -79,7 +89,7 @@ class Blake extends THREE.Object3D{
         var destinyDesc = {y : 0};
 
         this.jumpDesc = new TWEEN.Tween(originDesc)
-        .to(destinyDesc,500)
+        .to(destinyDesc,700)
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
             that.playAnimation("armature|jump_descending",true,1);
@@ -92,20 +102,109 @@ class Blake extends THREE.Object3D{
         var destinyLand = {y : 0};
 
         this.jumpLand = new TWEEN.Tween(originLand)
-        .to(destinyLand,500)
+        .to(destinyLand,250)
         .easing(TWEEN.Easing.Quadratic.Out)
         .onStart(function(){
-            that.playAnimation("armature|jump_landing",false,1);
-            that.trasladable = false;
+            that.playAnimation("armature|jump_landing",false,2);
+            that.jumping = false;
         })
         .onComplete(function(){
-            that.jumping = false;
-            that.trasladable = true;
+            that.idleable = true;
         })
 
         this.jumpStart.chain(this.jumpAsc);
         this.jumpAsc.chain(this.jumpDesc);
         this.jumpDesc.chain(this.jumpLand);
+        //#endregion Salto
+
+        //#region  Rebote  
+        var originStart = {y : 0};
+        var destinyStart = {y : 0.2};
+
+        var that = this;
+
+        this.bounceStart = new TWEEN.Tween(originStart)
+        .to(destinyStart,166)
+        .easing(TWEEN.Easing.Quadratic.In)
+        .onStart(function(){
+            console.log("BounceStart");
+            that.jumpDesc.stop();
+            that.boucing = true;
+            that.jumping = true;
+            that.idleable = false;
+            that.playAnimation("armature|jump_start",false,2);
+        })
+        .onUpdate(function(){
+            that.bounceNode.position.y = originStart.y;
+        })
+        .onComplete(function(){
+            that.boucing = false;
+        })
+
+        var origin = {y : 0.2};
+        var destiny = {y : 2};
+
+        this.bounceUp = new TWEEN.Tween(origin)
+        .to(destiny,500)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onStart(function(){
+            console.log("BounceUp");
+            that.idleable = false;
+            this.boucing = true;
+            that.playAnimation("armature|jump_ascending",true,1);
+        })
+        .onUpdate(function(){
+            that.bounceNode.position.y = origin.y;
+        });
+
+        var originD = {y : 2};
+        var destinyD = {y : 0};
+
+        this.bounceDown = new TWEEN.Tween(originD)
+        .to(destinyD,700)
+        .easing(TWEEN.Easing.Quadratic.In)
+        .onStart(function(){
+            console.log("BounceDown");
+            that.idleable = false;
+            that.playAnimation("armature|jump_descending",true,1);
+        })
+        .onUpdate(function(){
+            that.bounceNode.position.y = originD.y;
+        })
+
+        this.bounceLand = new TWEEN.Tween(originLand)
+        .to(destinyLand,250)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onStart(function(){
+            that.idleable = false;
+            console.log("BounceLand");
+            that.playAnimation("armature|jump_landing",false,2);
+        })
+        .onComplete(function(){
+            that.jumping = false;
+            that.idleable = true;
+        })
+        
+        this.bounceStart.chain(this.bounceUp);
+        this.bounceUp.chain(this.bounceDown);
+        //#endregion Rebote
+
+        //#region  Caida  
+        var originFall = {y : 0};
+        var destintyFall = {y : -10};
+
+        this.fallAnim = new TWEEN.Tween(originFall)
+        .to(destintyFall,2000)
+        .onStart(function(){
+            that.jumpLand.stop();
+            that.falling = true;
+            that.idleable = false;
+            that.playAnimation("armature|jump_air_loop",true,1);
+        })
+        .onUpdate(function(){
+            that.jumpNode.position.y = originFall.y;
+        })
+        //#endregion
     }
 
     createActions (model, animations) {
@@ -208,14 +307,14 @@ class Blake extends THREE.Object3D{
 
     
     checkAnimation(){
-        if(!this.jumping && (this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight)){
+        if(this.idleable && !this.jumping && !this.boucing && !this.falling && (this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight)){
             if(this.activeAction != this.actions['armature|run']){
                 this.playAnimation('armature|run',true,1);
             }
         }
         else{
             
-            if(!this.jumping && this.activeAction != this.actions['armature|idle']){
+            if(this.idleable && !this.jumping && !this.boucing && !this.falling && this.activeAction != this.actions['armature|idle']){
                 this.playAnimation('armature|idle',true,1);
             }
         }
@@ -539,8 +638,39 @@ class Blake extends THREE.Object3D{
     }
 
     jump(){
-        if(!this.jumping){
+        if(!this.jumping && !this.falling){
             this.jumpStart.start();
+        }
+    }
+
+    bounce(){
+        if(!this.boucing){
+            var that = this;
+            if(this.bounceCleanUp){
+                this.bounceCleanUp.stop();
+            }
+            var origin = {y : this.jumpNode.position.y};
+            var destiny = {y : 0};
+
+            this.bounceCleanUp = new TWEEN.Tween(origin)
+            .to(destiny,250 * this.jumpNode.position.y)
+            .easing(TWEEN.Easing.Quadratic.In)
+            .onStart(function(){
+                this.idleable = false;
+                this.boucing = true;
+            })
+            .onUpdate(function(){
+                that.jumpNode.position.y = origin.y;
+            })
+            this.bounceDown.chain(this.bounceCleanUp);
+            this.bounceCleanUp.chain(this.bounceLand);
+            this.bounceStart.start();
+        }
+    }
+
+    fall(){
+        if(!this.falling){
+            this.fallAnim.start();
         }
     }
 }

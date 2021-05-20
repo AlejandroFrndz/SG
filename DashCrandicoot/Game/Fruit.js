@@ -5,8 +5,8 @@ class Fruit extends THREE.Object3D{
     constructor(){
         super();
 
-        var geom = new THREE.SphereBufferGeometry(0.2,20,20);
-        geom.translate(0,0.2,0);
+        var geom = new THREE.SphereBufferGeometry(0.3,20,20);
+        geom.translate(0,0.3,0);
         var texture = new THREE.TextureLoader().load('../imgs/apple.jpg');
         var mat = new THREE.MeshPhongMaterial ({map: texture});
 
@@ -15,6 +15,8 @@ class Fruit extends THREE.Object3D{
         this.add(this.mesh);
 
         this.createIdleAnimation();
+
+        this.picked = false;
     }
 
     createIdleAnimation(){
@@ -52,27 +54,30 @@ class Fruit extends THREE.Object3D{
     }
 
     pickUp(){
-        var that = this;
+        if(!this.picked){
+            var that = this;
 
-        var origin = {y : this.position.y, rot : 0, scale : 1};
-        var destiny = {y : 4, rot : 720, scale : 0.1};
+            var origin = {y : this.position.y, rot : 0, scale : 1};
+            var destiny = {y : 4, rot : 720, scale : 0.1};
 
-        var picked = new TWEEN.Tween(origin)
-        .to(destiny,1000)
-        .easing(TWEEN.Easing.Quadratic.In)
-        .onStart(function(){
-            that.activeIdle.stop();
-        })
-        .onUpdate(function(){
-            that.position.y = origin.y;
-            that.rotation.y = origin.rot;
-            that.scale.set(origin.scale,origin.scale,origin.scale);
-        })
-        .onComplete(function(){
-            that.parent.remove(that);
-        })
+            var picked = new TWEEN.Tween(origin)
+            .to(destiny,600)
+            .easing(TWEEN.Easing.Quadratic.In)
+            .onStart(function(){
+                that.activeIdle.stop();
+                that.picked = true;
+            })
+            .onUpdate(function(){
+                that.position.y = origin.y;
+                that.rotation.y = origin.rot;
+                that.scale.set(origin.scale,origin.scale,origin.scale);
+            })
+            .onComplete(function(){
+                that.parent.remove(that);
+            })
 
-        picked.start();
+            picked.start();
+        }
     }
 }
 
