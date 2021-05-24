@@ -14,8 +14,9 @@ class Crate extends THREE.Object3D{
         var boxGeom = new THREE.BoxGeometry (1,1,0.01);
         boxGeom.translate(0,0.51,0);
         
-        var texture = new THREE.TextureLoader().load('../imgs/crate.jpg');
-        var mat = new THREE.MeshPhongMaterial ({map: texture});
+        var texture = new THREE.TextureLoader().load('../imgs/textures/crate/crate.jpg');
+        var normalMap = new THREE.TextureLoader().load('../imgs/textures/crate/crate-NM.jpg');
+        var mat = new THREE.MeshPhongMaterial ({map: texture, normalMap: normalMap});
   
 
         this.animFront = new THREE.Mesh(boxGeom,mat);

@@ -41,6 +41,19 @@ class MyScene extends THREE.Scene {
     
     // Un suelo 
     //this.createGround ();
+
+    //Carga de la textura para el fondo
+    var path = "../imgs/textures/skybox/";
+    var format = ".jpg";
+
+    var urls = [
+      path + "right" + format, path + "left" + format,
+      path + "top" + format, path + "bottom" + format,
+      path + "front" + format, path + "back" + format
+    ];
+
+    var cubeMap = new THREE.CubeTextureLoader().load(urls);
+    this.background = cubeMap;
     
     // Y unos ejes. Imprescindibles para orientarnos sobre dónde están las cosas
     this.axis = new THREE.AxesHelper (5);
@@ -246,7 +259,18 @@ class MyScene extends THREE.Scene {
           else{
             this.blake.trasladar(-0.1);
           }
+          break;
         }
+      }
+    }
+
+    for(var i = 0; i < this.crates.length; i++){
+      if(this.checkMarkerColisionCrates(this.crates[i])){
+        this.blake.marker.position.y = 1.005;
+        break;
+      }
+      else{
+        this.blake.marker.position.y = 0.001;
       }
     }
 
@@ -279,6 +303,22 @@ class MyScene extends THREE.Scene {
 
     var distance = this.blakePos.distanceTo(this.objPos);
     return distance < 0.8;
+  }
+
+  checkMarkerColisionCrates(crate){
+    if(crate == null){
+      return false;
+    }
+    if(crate.broken || !this.blake.loaded){
+      return false;
+    }
+
+    return (
+      (this.blake.marker.position.x <= (crate.position.x + 0.5)) &&
+      (this.blake.marker.position.x >= (crate.position.x - 0.5)) &&
+      (this.blake.marker.position.z <= (crate.position.z + 0.5)) &&
+      (this.blake.marker.position.z >= (crate.position.z - 0.5))
+      );
   }
 
   checkColisionFruits(fruit){

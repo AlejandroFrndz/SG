@@ -7,8 +7,8 @@ class Fruit extends THREE.Object3D{
 
         var geom = new THREE.SphereBufferGeometry(0.3,20,20);
         geom.translate(0,0.3,0);
-        var texture = new THREE.TextureLoader().load('../imgs/apple.jpg');
-        var mat = new THREE.MeshPhongMaterial ({map: texture});
+        var texture = new THREE.TextureLoader().load('../imgs/textures/apple.jpg');
+        var mat = new THREE.MeshPhongMaterial ({map: texture, shading: THREE.SmoothShading});
 
         this.mesh = new THREE.Mesh(geom,mat);
 

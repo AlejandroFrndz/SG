@@ -58,8 +58,6 @@ class Blake extends THREE.Object3D{
         var that = this;
 
         //#region  Salto  
-        this.jumps = 1;
-        this.trasladable = true;
         var originStart = {y : 0};
         var destinyStart = {y : 0.2};
 
@@ -79,6 +77,8 @@ class Blake extends THREE.Object3D{
         .to(destinyAsc,500)
         .easing(TWEEN.Easing.Quadratic.Out)
         .onStart(function(){
+            that.jumping = true;
+            that.idleable = false;
             that.playAnimation("armature|jump_ascending",true,1);
         })
         .onUpdate(function(){
@@ -92,6 +92,8 @@ class Blake extends THREE.Object3D{
         .to(destinyDesc,700)
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
+            that.jumping = true;
+            that.idleable = false;
             that.playAnimation("armature|jump_descending",true,1);
         })
         .onUpdate(function(){
@@ -150,7 +152,6 @@ class Blake extends THREE.Object3D{
         .onStart(function(){
             console.log("BounceUp");
             that.idleable = false;
-            this.boucing = true;
             that.playAnimation("armature|jump_ascending",true,1);
         })
         .onUpdate(function(){
@@ -194,12 +195,12 @@ class Blake extends THREE.Object3D{
         var destintyFall = {y : -10};
 
         this.fallAnim = new TWEEN.Tween(originFall)
-        .to(destintyFall,2000)
+        .to(destintyFall,1500)
         .onStart(function(){
             that.jumpLand.stop();
             that.falling = true;
             that.idleable = false;
-            that.playAnimation("armature|jump_air_loop",true,1);
+            that.playAnimation("armature|jump_air_loop",true,1.5);
         })
         .onUpdate(function(){
             that.jumpNode.position.y = originFall.y;
@@ -307,15 +308,16 @@ class Blake extends THREE.Object3D{
 
     
     checkAnimation(){
-        if(this.idleable && !this.jumping && !this.boucing && !this.falling && (this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight)){
-            if(this.activeAction != this.actions['armature|run']){
-                this.playAnimation('armature|run',true,1);
+        if(this.idleable){
+            if((this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight)){
+                if(this.activeAction != this.actions['armature|run']){
+                    this.playAnimation('armature|run',true,1);
+                }
             }
-        }
-        else{
-            
-            if(this.idleable && !this.jumping && !this.boucing && !this.falling && this.activeAction != this.actions['armature|idle']){
-                this.playAnimation('armature|idle',true,1);
+            else{
+                if(this.activeAction != this.actions['armature|idle']){
+                    this.playAnimation('armature|idle',true,1);
+                }
             }
         }
     }
@@ -611,18 +613,24 @@ class Blake extends THREE.Object3D{
     }
 
     setOrientation(){
-        var desiredOrientation = this.checkDesiredOrientation();
+        if(!this.falling){
+            var desiredOrientation = this.checkDesiredOrientation();
 
-        if(desiredOrientation != this.orientation){
-            var degrees = this.computeDegrees(desiredOrientation);
-            this.model.rotateOnAxis(this.model.up,THREE.MathUtils.degToRad(degrees));
-            this.orientation = desiredOrientation;
+            if(desiredOrientation != this.orientation){
+                var degrees = this.computeDegrees(desiredOrientation);
+                this.model.rotateOnAxis(this.model.up,THREE.MathUtils.degToRad(degrees));
+                this.orientation = desiredOrientation;
+            }
         }
     }
 
     trasladar(d){
-        if(this.trasladable)
+        if(!this.falling){
             this.model.translateOnAxis(this.forward,d);
+            this.marker.position.x = this.model.position.x;
+            this.marker.position.z = this.model.position.z;
+        }
+        
     }
 
     update () {

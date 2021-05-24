@@ -6,7 +6,7 @@ class Marker extends THREE.Object3D{
         
         var shape = new THREE.Shape();
 
-        shape.absarc(0,0,0.6,0,2*Math.PI);
+        shape.absarc(0,0,0.55,0,2*Math.PI);
 
         var hole = new THREE.Shape();
 
@@ -17,7 +17,7 @@ class Marker extends THREE.Object3D{
         shapeGeom.rotateX(-Math.PI/2);
         shapeGeom.translate(0,0.001,0);
 
-        var shapeMat = new THREE.MeshBasicMaterial( { color: 0xFF0000 } );
+        var shapeMat = new THREE.MeshLambertMaterial( { color: 0x000000 , emissive: 0xff7f00, emissiveIntensity: 1} );
         var shapeMesh = new THREE.Mesh( shapeGeom, shapeMat );
 
         this.add(shapeMesh);
