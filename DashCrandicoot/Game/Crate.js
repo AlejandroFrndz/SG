@@ -1,13 +1,16 @@
 import * as THREE from '../libs/three.module.js';
 import * as TWEEN from '../libs/tween.esm.js'
+import { Fruit } from './Fruit.js'
+import { MyScene } from './MyScene.js';
 
 class Crate extends THREE.Object3D{
-    constructor() {
+    constructor(fruits) {
         super();
         
         this.createModel();
         this.createAnimation();
-        
+        this.nFruits = fruits;
+        this.fruit = new Fruit();
       }
 
       createModel(){
@@ -79,6 +82,9 @@ class Crate extends THREE.Object3D{
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
           that.broken = true;
+          that.add(that.fruit);
+          that.fruit.pickUp();
+          MyScene.fruitCount += (that.nFruits - 1);
         })
         .onUpdate(function(){
           that.faceTop.position.y = origin.top;

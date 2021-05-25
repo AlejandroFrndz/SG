@@ -21,6 +21,8 @@ import { Platform } from './Platform.js'
 class MyScene extends THREE.Scene {
   // Recibe el  div  que se ha creado en el  html  que va a ser el lienzo en el que mostrar
   // la visualización de la escena
+  static fruitCount = 0;
+
   constructor (myCanvas) { 
     super();
     
@@ -29,18 +31,13 @@ class MyScene extends THREE.Scene {
     
     // Se crea la interfaz gráfica de usuario
     this.gui = this.createGUI ();
-    
-    // Construimos los distinos elementos que tendremos en la escena
-    
+        
     // Todo elemento que se desee sea tenido en cuenta en el renderizado de la escena debe pertenecer a esta. Bien como hijo de la escena (this en esta clase) o como hijo de un elemento que ya esté en la escena.
     // Tras crear cada elemento se añadirá a la escena con   this.add(variable)
     this.createLights ();
     
     // Tendremos una cámara con un control de movimiento con el ratón
     this.createCamera ();
-    
-    // Un suelo 
-    //this.createGround ();
 
     //Carga de la textura para el fondo
     var path = "../imgs/textures/skybox/";
@@ -59,41 +56,71 @@ class MyScene extends THREE.Scene {
     this.axis = new THREE.AxesHelper (5);
     this.add (this.axis);
     
-    
-    this.fruitCount = 0;
+    //UI que incluye el contador de frutas recogidas
     this.gameUI = document.getElementById("Messages");
-    this.gameUI.innerHTML = this.fruitCount;
-
-    //Cajas
-    this.crates = [];
-    var crate = new Crate();
-    this.add(crate);
-    crate.position.set(2,0,0);
-    this.crates.push(crate);
-    crate = new Crate();
-    this.add(crate);
-    this.crates.push(crate);
-
+    this.gameUI.innerHTML = MyScene.fruitCount;
+    
+    //Creación del personaje principal
     //Blake
     this.blake = new Blake();
     this.add(this.blake);
 
-    //Frutas
+    //Creación de los elementos de la escena, dividos en plataformas
+    //Se crean primeramente los vectores para cada tipo de elemento, que son comunes a todas las plataformas
+    this.crates = [];
     this.fruits = [];
-    var fruit = new Fruit();
-    this.add(fruit);
-    this.fruits.push(fruit);
-    fruit = new Fruit();
-    this.add(fruit);
-    this.fruits.push(fruit);
-    fruit.position.set(-3,1,2);
+    this.platforms = [];
 
-    this.platform = new Platform();
-    this.add(this.platform);
+    var platform;
+    var crate;
+    var fruit;
+
+    //#region Plataforma 1. Contiene a Blake al comienzo
+      //Plataforma
+      platform = new Platform(5,5);
+      this.platforms.push(platform);
+      this.add(platform);
+      platform.incluirBlake(this.blake);
+      this.blakePlatform = platform;
+
+      //Cajas
+      crate = new Crate(4);
+      this.add(crate);
+      crate.position.set(2,0,0);
+      this.crates.push(crate);
+      platform.incluir(crate);
+
+      crate = new Crate(6);
+      this.add(crate);
+      this.crates.push(crate);
+      platform.incluir(crate);
+
+      //Frutas
+      fruit = new Fruit();
+      this.add(fruit);
+      fruit.position.set(2,0,2);
+      this.fruits.push(fruit);
+      platform.incluir(fruit);
+
+      fruit = new Fruit();
+      this.add(fruit);
+      this.fruits.push(fruit);
+      fruit.position.set(-2,0,2);
+      platform.incluir(fruit);
+    //#endregion    
+
+    //#region Plataforma 2
+      //Plataforma
+      platform = new Platform(7,5);
+      this.platforms.push(platform);
+      platform.position.set(4,0,6);
+      this.add(platform);
+    //#endregion
 
     //Vectores para la deteccion de colisiones
     this.blakePos = new THREE.Vector3();
     this.objPos = new THREE.Vector3();
+
   }
   
   createCamera () {
@@ -120,27 +147,6 @@ class MyScene extends THREE.Scene {
     // Debe orbitar con respecto al punto de mira de la cámara
     this.cameraControl.target = look;
     this.cameraControl.enabled = false;
-  }
-  
-  createGround () {
-    // El suelo es un Mesh, necesita una geometría y un material.
-    
-    // La geometría es una caja con muy poca altura
-    var geometryGround = new THREE.BoxGeometry (50,0.2,50);
-    
-    // El material se hará con una textura de madera
-    var texture = new THREE.TextureLoader().load('../imgs/wood.jpg');
-    var materialGround = new THREE.MeshPhongMaterial ({map: texture});
-    
-    // Ya se puede construir el Mesh
-    var ground = new THREE.Mesh (geometryGround, materialGround);
-    
-    // Todas las figuras se crean centradas en el origen.
-    // El suelo lo bajamos la mitad de su altura para que el origen del mundo se quede en su lado superior
-    ground.position.y = -0.1;
-    
-    // Que no se nos olvide añadirlo a la escena, que en este caso es  this
-    this.add (ground);
   }
   
   createGUI () {
@@ -247,11 +253,12 @@ class MyScene extends THREE.Scene {
     // Se actualiza la posición de la cámara según su controlador
     this.cameraControl.update();
 
+
     this.blake.update();
     for(var i = 0; i < this.crates.length; i++){
       if(this.crates[i] != null){
         if(this.checkColisionCrates(this.crates[i])){
-          if(this.blake.jumping && this.blake.jumpNode.position.y > 0.6){
+          if(this.blake.jumping && this.blake.jumpNode.position.y >= (this.crates[i].faceTop.position.y - 0.5)){
             this.crates[i].startAnimation();
             this.blake.bounce();
             this.crates[i] = null;
@@ -285,12 +292,27 @@ class MyScene extends THREE.Scene {
       }
     }
 
-    if(!this.checkColisionPlatforms(this.platform) && !this.blake.jumping){
+    var shouldFall = true;
+    for(var i = 0; i < this.platforms.length; i++){
+      if(this.checkColisionPlatforms(this.platforms[i]) && !this.blake.jumping){
+        if(this.blakePlatform != this.platforms[i]){
+          this.blakePlatform.excluirBlake();
+          this.blakePlatform = this.platforms[i];
+          this.blakePlatform.incluirBlake(this.blake);
+        }
+        shouldFall = false;
+        break;
+      }
+    }
+
+    //console.log(this.blake.jumping);
+
+    if(shouldFall && !this.blake.jumping){
       this.blake.fall();
     }
 
     TWEEN.update();
-    this.gameUI.innerHTML = this.fruitCount;
+    this.gameUI.innerHTML = MyScene.fruitCount;
   }
 
   checkColisionCrates(crate){
@@ -314,10 +336,10 @@ class MyScene extends THREE.Scene {
     }
 
     return (
-      (this.blake.marker.position.x <= (crate.position.x + 0.5)) &&
-      (this.blake.marker.position.x >= (crate.position.x - 0.5)) &&
-      (this.blake.marker.position.z <= (crate.position.z + 0.5)) &&
-      (this.blake.marker.position.z >= (crate.position.z - 0.5))
+      ((this.blake.marker.position.x + this.blake.position.x) <= (crate.position.x + 0.5)) &&
+      ((this.blake.marker.position.x + this.blake.position.x) >= (crate.position.x - 0.5)) &&
+      ((this.blake.marker.position.z + this.blake.position.z) <= (crate.position.z + 0.5)) &&
+      ((this.blake.marker.position.z + this.blake.position.z) >= (crate.position.z - 0.5))
       );
   }
 
@@ -339,10 +361,10 @@ class MyScene extends THREE.Scene {
     }
 
     return (
-      (this.blake.model.position.x <= (platform.position.x + (2.5 * 1.1))) &&
-      (this.blake.model.position.x >= (platform.position.x - (2.5 * 1.1))) &&
-      (this.blake.model.position.z <= (platform.position.z + (2.5 * 1.1))) &&
-      (this.blake.model.position.z >= (platform.position.z - (2.5 * 1.1)))
+      ((this.blake.model.position.x + this.blake.position.x) <= (platform.position.x + (platform.x + Platform.Margen))) &&
+      ((this.blake.model.position.x + this.blake.position.x) >= (platform.position.x - (platform.x + Platform.Margen))) &&
+      ((this.blake.model.position.z + this.blake.position.z) <= (platform.position.z + (platform.z + Platform.Margen))) &&
+      ((this.blake.model.position.z + this.blake.position.z) >= (platform.position.z - (platform.z + Platform.Margen)))
       );
   }
 
@@ -357,7 +379,8 @@ class MyScene extends THREE.Scene {
     var tecla = String.fromCharCode(x);
     
     if(tecla == "X"){
-      this.blake.fall();
+      this.platforms[0].crearAnimacion({x : 0, z : 0}, {x : 5, z : 0}, 2000, 1000);
+      return;
     }
 
     if(tecla == " "){
@@ -381,6 +404,8 @@ class MyScene extends THREE.Scene {
     this.blake.stop(tecla);
   }
 }
+
+export { MyScene };
 
 
 /// La función   main

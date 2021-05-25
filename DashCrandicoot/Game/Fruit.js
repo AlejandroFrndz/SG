@@ -1,6 +1,6 @@
 import * as THREE from '../libs/three.module.js';
 import * as TWEEN from '../libs/tween.esm.js'
-
+import {MyScene} from './MyScene.js'
 class Fruit extends THREE.Object3D{
     constructor(){
         super();
@@ -8,11 +8,12 @@ class Fruit extends THREE.Object3D{
         var geom = new THREE.SphereBufferGeometry(0.3,20,20);
         geom.translate(0,0.3,0);
         var texture = new THREE.TextureLoader().load('../imgs/textures/apple.jpg');
-        var mat = new THREE.MeshPhongMaterial ({map: texture, shading: THREE.SmoothShading});
+        var mat = new THREE.MeshPhongMaterial ({map: texture, flatShading: false});
 
         this.mesh = new THREE.Mesh(geom,mat);
-
-        this.add(this.mesh);
+        this.animNode = new THREE.Object3D();
+        this.animNode.add(this.mesh);
+        this.add(this.animNode);
 
         this.createIdleAnimation();
 
@@ -31,8 +32,8 @@ class Fruit extends THREE.Object3D{
             that.activeIdle = that.idleUp;
         })
         .onUpdate(function(){
-            that.position.y = originUp.y;
-            that.rotation.y = THREE.MathUtils.degToRad(originUp.rot);
+            that.animNode.position.y = originUp.y;
+            that.animNode.rotation.y = THREE.MathUtils.degToRad(originUp.rot);
         });
 
         var originDown = {y : 0.5, rot : 180};
@@ -44,8 +45,8 @@ class Fruit extends THREE.Object3D{
             that.activeIdle = that.idleDown;
         })
         .onUpdate(function(){
-            that.position.y = originDown.y;
-            that.rotation.y = THREE.MathUtils.degToRad(originDown.rot);
+            that.animNode.position.y = originDown.y;
+            that.animNode.rotation.y = THREE.MathUtils.degToRad(originDown.rot);
         });
 
         this.idleUp.chain(this.idleDown);
@@ -66,11 +67,12 @@ class Fruit extends THREE.Object3D{
             .onStart(function(){
                 that.activeIdle.stop();
                 that.picked = true;
+                MyScene.fruitCount++;
             })
             .onUpdate(function(){
-                that.position.y = origin.y;
-                that.rotation.y = origin.rot;
-                that.scale.set(origin.scale,origin.scale,origin.scale);
+                that.animNode.position.y = origin.y;
+                that.animNode.rotation.y = origin.rot;
+                that.animNode.scale.set(origin.scale,origin.scale,origin.scale);
             })
             .onComplete(function(){
                 that.parent.remove(that);

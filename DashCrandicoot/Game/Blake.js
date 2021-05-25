@@ -52,6 +52,8 @@ class Blake extends THREE.Object3D{
 
         this.marker = new Marker();
         this.add(this.marker);
+
+        this.bounceCleanUp = null;
     }
 
     createTweens(){
@@ -65,6 +67,7 @@ class Blake extends THREE.Object3D{
         .to(destinyStart,166)
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
+            //console.log("jumpStart");
             that.jumping = true;
             that.idleable = false;
             that.playAnimation("armature|jump_start",false,2);
@@ -77,11 +80,13 @@ class Blake extends THREE.Object3D{
         .to(destinyAsc,500)
         .easing(TWEEN.Easing.Quadratic.Out)
         .onStart(function(){
+            //console.log("jumpAsc");
             that.jumping = true;
             that.idleable = false;
             that.playAnimation("armature|jump_ascending",true,1);
         })
         .onUpdate(function(){
+            //console.log("jumpAsc");
             that.jumpNode.position.y = originAsc.y;
         });
         
@@ -92,11 +97,13 @@ class Blake extends THREE.Object3D{
         .to(destinyDesc,700)
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
+            //console.log("jumpDesc");
             that.jumping = true;
             that.idleable = false;
             that.playAnimation("armature|jump_descending",true,1);
         })
         .onUpdate(function(){
+            //console.log("jumpDesc");
             that.jumpNode.position.y = originDesc.y;
         });
 
@@ -107,11 +114,12 @@ class Blake extends THREE.Object3D{
         .to(destinyLand,250)
         .easing(TWEEN.Easing.Quadratic.Out)
         .onStart(function(){
+            //console.log("jumpLand");
             that.playAnimation("armature|jump_landing",false,2);
-            that.jumping = false;
         })
         .onComplete(function(){
             that.idleable = true;
+            that.jumping = false;
         })
 
         this.jumpStart.chain(this.jumpAsc);
@@ -129,7 +137,8 @@ class Blake extends THREE.Object3D{
         .to(destinyStart,166)
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
-            console.log("BounceStart");
+            //console.log("bounceStart");
+            that.jumpDesc.stopChainedTweens();
             that.jumpDesc.stop();
             that.boucing = true;
             that.jumping = true;
@@ -137,6 +146,7 @@ class Blake extends THREE.Object3D{
             that.playAnimation("armature|jump_start",false,2);
         })
         .onUpdate(function(){
+            //console.log("bounceStart");
             that.bounceNode.position.y = originStart.y;
         })
         .onComplete(function(){
@@ -150,11 +160,11 @@ class Blake extends THREE.Object3D{
         .to(destiny,500)
         .easing(TWEEN.Easing.Quadratic.Out)
         .onStart(function(){
-            console.log("BounceUp");
             that.idleable = false;
             that.playAnimation("armature|jump_ascending",true,1);
         })
         .onUpdate(function(){
+            //console.log("bounceUp");
             that.bounceNode.position.y = origin.y;
         });
 
@@ -165,11 +175,11 @@ class Blake extends THREE.Object3D{
         .to(destinyD,700)
         .easing(TWEEN.Easing.Quadratic.In)
         .onStart(function(){
-            console.log("BounceDown");
             that.idleable = false;
             that.playAnimation("armature|jump_descending",true,1);
         })
         .onUpdate(function(){
+            //console.log("bounceDown");
             that.bounceNode.position.y = originD.y;
         })
 
@@ -177,14 +187,15 @@ class Blake extends THREE.Object3D{
         .to(destinyLand,250)
         .easing(TWEEN.Easing.Quadratic.Out)
         .onStart(function(){
+            //console.log("bounceLand");
             that.idleable = false;
-            console.log("BounceLand");
             that.playAnimation("armature|jump_landing",false,2);
         })
         .onComplete(function(){
             that.jumping = false;
             that.idleable = true;
         })
+        
         
         this.bounceStart.chain(this.bounceUp);
         this.bounceUp.chain(this.bounceDown);
@@ -654,9 +665,15 @@ class Blake extends THREE.Object3D{
     bounce(){
         if(!this.boucing){
             var that = this;
-            if(this.bounceCleanUp){
+            if(this.bounceCleanUp != null){
+                this.bounceCleanUp.stopChainedTweens();
                 this.bounceCleanUp.stop();
             }
+            this.bounceLand.stopChainedTweens();
+            this.bounceLand.stop();
+            this.bounceDown.stopChainedTweens();
+            this.bounceDown.stop();
+
             var origin = {y : this.jumpNode.position.y};
             var destiny = {y : 0};
 
@@ -664,8 +681,8 @@ class Blake extends THREE.Object3D{
             .to(destiny,250 * this.jumpNode.position.y)
             .easing(TWEEN.Easing.Quadratic.In)
             .onStart(function(){
-                this.idleable = false;
-                this.boucing = true;
+                //console.log("bounceCleanUp");
+                that.idleable = false;
             })
             .onUpdate(function(){
                 that.jumpNode.position.y = origin.y;
