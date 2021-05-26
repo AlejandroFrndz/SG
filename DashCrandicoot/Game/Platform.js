@@ -4,13 +4,15 @@ import * as TWEEN from '../libs/tween.esm.js'
 class Platform extends THREE.Object3D{
     static get Margen() {return 0.25;}
 
-    constructor(sizeX, sizeZ){
+    constructor(sizeX, sizeZ, dimension){
         super();
 
         this.objs = [];
         this.dobjs = [];
         this.blake;
         this.dblake;
+
+        this.dimension = dimension;
 
         this.x = sizeX/2;
         this.z = sizeZ/2;
@@ -19,9 +21,9 @@ class Platform extends THREE.Object3D{
 
         var texture = new THREE.TextureLoader().load('../imgs/textures/platform/platform.png');
         var normalMap = new THREE.TextureLoader().load('../imgs/textures/platform/platform-NM.png');
-        var mat = new THREE.MeshPhongMaterial ({map: texture, normalMap: normalMap});
+        this.mat = new THREE.MeshPhongMaterial ({map: texture, normalMap: normalMap});
 
-        this.mesh = new THREE.Mesh(geom,mat);
+        this.mesh = new THREE.Mesh(geom,this.mat);
         this.add(this.mesh);
     }
 

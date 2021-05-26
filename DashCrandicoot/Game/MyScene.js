@@ -77,20 +77,20 @@ class MyScene extends THREE.Scene {
 
     //#region Plataforma 1. Contiene a Blake al comienzo
       //Plataforma
-      platform = new Platform(5,5);
+      platform = new Platform(5,5,0);
       this.platforms.push(platform);
       this.add(platform);
       platform.incluirBlake(this.blake);
       this.blakePlatform = platform;
 
       //Cajas
-      crate = new Crate(4);
+      crate = new Crate(4,1);
       this.add(crate);
       crate.position.set(2,0,0);
       this.crates.push(crate);
       platform.incluir(crate);
 
-      crate = new Crate(6);
+      crate = new Crate(6,-1);
       this.add(crate);
       this.crates.push(crate);
       platform.incluir(crate);
@@ -111,7 +111,7 @@ class MyScene extends THREE.Scene {
 
     //#region Plataforma 2
       //Plataforma
-      platform = new Platform(7,5);
+      platform = new Platform(7,5,-1);
       this.platforms.push(platform);
       platform.position.set(4,0,6);
       this.add(platform);
@@ -121,6 +121,56 @@ class MyScene extends THREE.Scene {
     this.blakePos = new THREE.Vector3();
     this.objPos = new THREE.Vector3();
 
+    //Establecimiento de la dimensión
+    this.dimension = -1;
+    this.switchDimensions();
+  }
+
+  switchDimensions(){
+    var dimension = this.dimension * -1;
+    var cambiar = true;
+
+    for(var i = 0; i < this.crates.length && cambiar; i++){
+      if(this.crates[i] != null){
+        if(this.crates[i].dimension == dimension){
+          if(this.checkColisionCrates(this.crates[i])){
+            cambiar = false;
+          }
+        }
+      }
+    }
+
+    for(var i = 0; i < this.platforms.length && cambiar; i++){
+      if(this.platforms[i].dimension == dimension){
+        if(this.checkColisionPlatforms(this.platforms[i]) && !this.blake.jumping){
+          cambiar = false;
+        }
+      }
+    }
+
+    if(cambiar){
+      for(var i = 0; i < this.crates.length; i++){
+        if(this.crates[i] != null){
+          if(this.crates[i].dimension == dimension){
+            this.crates[i].mat.wireframe = false;
+          }
+          else if(this.crates[i].dimension != 0){
+            this.crates[i].mat.wireframe = true;
+          }
+        }
+      }
+
+      for(var i = 0; i < this.platforms.length; i++){
+        if(this.platforms[i].dimension == dimension){
+          this.platforms[i].mat.wireframe = false;
+        }
+        else if(this.platforms[i].dimension != 0){
+          this.platforms[i].mat.wireframe = true;
+        }
+      }
+
+      this.dimension = dimension;
+    }
   }
   
   createCamera () {
@@ -257,27 +307,31 @@ class MyScene extends THREE.Scene {
     this.blake.update();
     for(var i = 0; i < this.crates.length; i++){
       if(this.crates[i] != null){
-        if(this.checkColisionCrates(this.crates[i])){
-          if(this.blake.jumping && this.blake.jumpNode.position.y >= (this.crates[i].faceTop.position.y - 0.5)){
-            this.crates[i].startAnimation();
-            this.blake.bounce();
-            this.crates[i] = null;
+        if(this.crates[i].dimension == this.dimension || this.crates[i].dimension == 0){
+          if(this.checkColisionCrates(this.crates[i])){
+            if(this.blake.jumping && this.blake.jumpNode.position.y >= (this.crates[i].faceTop.position.y - 0.5)){
+              this.crates[i].startAnimation();
+              this.blake.bounce();
+              this.crates[i] = null;
+            }
+            else{
+              this.blake.trasladar(-0.1);
+            }
+            break;
           }
-          else{
-            this.blake.trasladar(-0.1);
-          }
-          break;
         }
       }
     }
 
+    this.blake.marker.position.y = 0.001;
     for(var i = 0; i < this.crates.length; i++){
-      if(this.checkMarkerColisionCrates(this.crates[i])){
-        this.blake.marker.position.y = 1.005;
-        break;
-      }
-      else{
-        this.blake.marker.position.y = 0.001;
+      if(this.crates[i] != null){
+        if(this.crates[i].dimension == this.dimension || this.crates[i].dimension == 0){
+          if(this.checkMarkerColisionCrates(this.crates[i])){
+            this.blake.marker.position.y = 1.005;
+            break;
+          }
+        }
       }
     }
 
@@ -294,14 +348,16 @@ class MyScene extends THREE.Scene {
 
     var shouldFall = true;
     for(var i = 0; i < this.platforms.length; i++){
-      if(this.checkColisionPlatforms(this.platforms[i]) && !this.blake.jumping){
-        if(this.blakePlatform != this.platforms[i]){
-          this.blakePlatform.excluirBlake();
-          this.blakePlatform = this.platforms[i];
-          this.blakePlatform.incluirBlake(this.blake);
+      if(this.platforms[i].dimension == this.dimension || this.platforms[i].dimension == 0){
+        if(this.checkColisionPlatforms(this.platforms[i]) && !this.blake.jumping){
+          if(this.blakePlatform != this.platforms[i]){
+            this.blakePlatform.excluirBlake();
+            this.blakePlatform = this.platforms[i];
+            this.blakePlatform.incluirBlake(this.blake);
+          }
+          shouldFall = false;
+          break;
         }
-        shouldFall = false;
-        break;
       }
     }
 
@@ -380,6 +436,11 @@ class MyScene extends THREE.Scene {
     
     if(tecla == "X"){
       this.platforms[0].crearAnimacion({x : 0, z : 0}, {x : 5, z : 0}, 2000, 1000);
+      return;
+    }
+    console.log(tecla);
+    if(tecla == "Q"){
+      this.switchDimensions();
       return;
     }
 

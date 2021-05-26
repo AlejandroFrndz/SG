@@ -4,13 +4,15 @@ import { Fruit } from './Fruit.js'
 import { MyScene } from './MyScene.js';
 
 class Crate extends THREE.Object3D{
-    constructor(fruits) {
+    constructor(fruits, dimension) {
         super();
         
         this.createModel();
         this.createAnimation();
         this.nFruits = fruits;
         this.fruit = new Fruit();
+
+        this.dimension = dimension;
       }
 
       createModel(){
@@ -19,37 +21,36 @@ class Crate extends THREE.Object3D{
         
         var texture = new THREE.TextureLoader().load('../imgs/textures/crate/crate.jpg');
         var normalMap = new THREE.TextureLoader().load('../imgs/textures/crate/crate-NM.jpg');
-        var mat = new THREE.MeshPhongMaterial ({map: texture, normalMap: normalMap});
-  
+        this.mat = new THREE.MeshPhongMaterial ({map: texture, normalMap: normalMap});
 
-        this.animFront = new THREE.Mesh(boxGeom,mat);
+        this.animFront = new THREE.Mesh(boxGeom,this.mat);
         var faceFront = new THREE.Object3D();
         faceFront.add(this.animFront);
         faceFront.position.z = 0.5;
 
-        this.animBack = new THREE.Mesh(boxGeom,mat);
+        this.animBack = new THREE.Mesh(boxGeom,this.mat);
         var faceBack = new THREE.Object3D();
         faceBack.add(this.animBack);
         faceBack.position.z = -0.5;
 
-        this.animRight = new THREE.Mesh(boxGeom,mat);
+        this.animRight = new THREE.Mesh(boxGeom,this.mat);
         var faceRight = new THREE.Object3D();
         faceRight.add(this.animRight);
         faceRight.rotation.y = THREE.MathUtils.degToRad(90);
         faceRight.position.x = 0.5;
 
-        this.animLeft = new THREE.Mesh(boxGeom,mat);
+        this.animLeft = new THREE.Mesh(boxGeom,this.mat);
         var faceLeft = new THREE.Object3D();
         faceLeft.add(this.animLeft);
         faceLeft.rotation.y = THREE.MathUtils.degToRad(90);
         faceLeft.position.x = -0.5;
 
-        this.faceTop = new THREE.Mesh(boxGeom,mat);
+        this.faceTop = new THREE.Mesh(boxGeom,this.mat);
         this.faceTop.rotation.x = THREE.MathUtils.degToRad(90);
         this.faceTop.position.y = 1;
         this.faceTop.position.z = -0.5;
 
-        this.faceBottom = new THREE.Mesh(boxGeom,mat);
+        this.faceBottom = new THREE.Mesh(boxGeom,this.mat);
         this.faceBottom.rotation.x = THREE.MathUtils.degToRad(90);
         this.faceBottom.position.z = -0.5;
 
