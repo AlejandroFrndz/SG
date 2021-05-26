@@ -4,7 +4,7 @@ import { Fruit } from './Fruit.js'
 import { MyScene } from './MyScene.js';
 
 class Crate extends THREE.Object3D{
-    constructor(fruits, dimension) {
+    constructor(fruits, dimension, dimensionColor) {
         super();
         
         this.createModel();
@@ -13,15 +13,16 @@ class Crate extends THREE.Object3D{
         this.fruit = new Fruit();
 
         this.dimension = dimension;
+        this.dimensionColor = dimensionColor;
       }
 
       createModel(){
         var boxGeom = new THREE.BoxGeometry (1,1,0.01);
         boxGeom.translate(0,0.51,0);
         
-        var texture = new THREE.TextureLoader().load('../imgs/textures/crate/crate.jpg');
-        var normalMap = new THREE.TextureLoader().load('../imgs/textures/crate/crate-NM.jpg');
-        this.mat = new THREE.MeshPhongMaterial ({map: texture, normalMap: normalMap});
+        this.texture = new THREE.TextureLoader().load('../imgs/textures/crate/crate.jpg');
+        this.normalMap = new THREE.TextureLoader().load('../imgs/textures/crate/crate-NM.jpg');
+        this.mat = new THREE.MeshPhongMaterial ({map: this.texture, normalMap: this.normalMap});
 
         this.animFront = new THREE.Mesh(boxGeom,this.mat);
         var faceFront = new THREE.Object3D();
@@ -107,6 +108,23 @@ class Crate extends THREE.Object3D{
       startAnimation(){
         if(!this.broken){
           this.animation.start();
+        }
+      }
+
+      toggleWireFrame(modo){
+        if(modo){
+          this.mat.wireframe = true;
+          this.mat.color.set(this.dimensionColor);
+          this.mat.map = null;
+          this.mat.normalMap = null;
+          this.mat.needsUpdate = true;
+        }
+        else{
+          this.mat.wireframe = false;
+          this.mat.map = this.texture;
+          this.mat.normalMap = this.normalMap;
+          this.mat.color.set(0xFFFFFF);
+          this.mat.needsUpdate = true;
         }
       }
 

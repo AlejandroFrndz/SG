@@ -4,7 +4,7 @@ import * as TWEEN from '../libs/tween.esm.js'
 class Platform extends THREE.Object3D{
     static get Margen() {return 0.25;}
 
-    constructor(sizeX, sizeZ, dimension){
+    constructor(sizeX, sizeZ, dimension, dimensionColor){
         super();
 
         this.objs = [];
@@ -13,15 +13,16 @@ class Platform extends THREE.Object3D{
         this.dblake;
 
         this.dimension = dimension;
+        this.dimensionColor = dimensionColor;
 
         this.x = sizeX/2;
         this.z = sizeZ/2;
         var geom = new THREE.BoxBufferGeometry(sizeX,2,sizeZ);
         geom.translate(0,-1,0);
 
-        var texture = new THREE.TextureLoader().load('../imgs/textures/platform/platform.png');
-        var normalMap = new THREE.TextureLoader().load('../imgs/textures/platform/platform-NM.png');
-        this.mat = new THREE.MeshPhongMaterial ({map: texture, normalMap: normalMap});
+        this.texture = new THREE.TextureLoader().load('../imgs/textures/platform/platform.png');
+        this.normalMap = new THREE.TextureLoader().load('../imgs/textures/platform/platform-NM.png');
+        this.mat = new THREE.MeshPhongMaterial ({map: this.texture, normalMap: this.normalMap});
 
         this.mesh = new THREE.Mesh(geom,this.mat);
         this.add(this.mesh);
@@ -78,6 +79,23 @@ class Platform extends THREE.Object3D{
         .repeat(Infinity)
         .delay(delay)
         .start();
+    }
+
+    toggleWireFrame(modo){
+        if(modo){
+          this.mat.wireframe = true;
+          this.mat.color.set(this.dimensionColor);
+          this.mat.map = null;
+          this.mat.normalMap = null;
+          this.mat.needsUpdate = true;
+        }
+        else{
+          this.mat.wireframe = false;
+          this.mat.map = this.texture;
+          this.mat.normalMap = this.normalMap;
+          this.mat.color.set(0xFFFFFF);
+          this.mat.needsUpdate = true;
+        }
     }
 }
 

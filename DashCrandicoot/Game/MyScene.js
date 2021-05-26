@@ -13,6 +13,13 @@ import { Blake } from './Blake.js'
 import { Fruit } from './Fruit.js'
 import { Platform } from './Platform.js'
 
+//Constantes
+
+const positiveColor = 0x0000FF;
+const negativeColor = 0xFF0000;
+const positiveLightColor = 0xaaaaff;
+const negativeLightColor = 0xffaaaa;
+
 /// La clase fachada del modelo
 /**
  * Usaremos una clase derivada de la clase Scene de Three.js para llevar el control de la escena y de todo lo que ocurre en ella.
@@ -34,7 +41,6 @@ class MyScene extends THREE.Scene {
         
     // Todo elemento que se desee sea tenido en cuenta en el renderizado de la escena debe pertenecer a esta. Bien como hijo de la escena (this en esta clase) o como hijo de un elemento que ya esté en la escena.
     // Tras crear cada elemento se añadirá a la escena con   this.add(variable)
-    this.createLights ();
     
     // Tendremos una cámara con un control de movimiento con el ratón
     this.createCamera ();
@@ -84,13 +90,13 @@ class MyScene extends THREE.Scene {
       this.blakePlatform = platform;
 
       //Cajas
-      crate = new Crate(4,1);
+      crate = new Crate(4,1,positiveColor);
       this.add(crate);
       crate.position.set(2,0,0);
       this.crates.push(crate);
       platform.incluir(crate);
 
-      crate = new Crate(6,-1);
+      crate = new Crate(6,-1,negativeColor);
       this.add(crate);
       this.crates.push(crate);
       platform.incluir(crate);
@@ -111,11 +117,14 @@ class MyScene extends THREE.Scene {
 
     //#region Plataforma 2
       //Plataforma
-      platform = new Platform(7,5,-1);
+      platform = new Platform(7,5,-1,negativeColor);
       this.platforms.push(platform);
       platform.position.set(4,0,6);
       this.add(platform);
     //#endregion
+
+    //Luces
+    this.createLights ();
 
     //Vectores para la deteccion de colisiones
     this.blakePos = new THREE.Vector3();
@@ -124,6 +133,9 @@ class MyScene extends THREE.Scene {
     //Establecimiento de la dimensión
     this.dimension = -1;
     this.switchDimensions();
+
+
+
   }
 
   switchDimensions(){
@@ -152,20 +164,20 @@ class MyScene extends THREE.Scene {
       for(var i = 0; i < this.crates.length; i++){
         if(this.crates[i] != null){
           if(this.crates[i].dimension == dimension){
-            this.crates[i].mat.wireframe = false;
+            this.crates[i].toggleWireFrame(false);
           }
           else if(this.crates[i].dimension != 0){
-            this.crates[i].mat.wireframe = true;
+            this.crates[i].toggleWireFrame(true);
           }
         }
       }
 
       for(var i = 0; i < this.platforms.length; i++){
         if(this.platforms[i].dimension == dimension){
-          this.platforms[i].mat.wireframe = false;
+          this.platforms[i].toggleWireFrame(false);
         }
         else if(this.platforms[i].dimension != 0){
-          this.platforms[i].mat.wireframe = true;
+          this.platforms[i].toggleWireFrame(true);
         }
       }
 
@@ -229,9 +241,9 @@ class MyScene extends THREE.Scene {
     // La luz ambiental solo tiene un color y una intensidad
     // Se declara como   var   y va a ser una variable local a este método
     //    se hace así puesto que no va a ser accedida desde otros métodos
-    var ambientLight = new THREE.AmbientLight(0xccddee, 0.35);
+    this.ambientLight = new THREE.AmbientLight(0xccddee, 0.20);
     // La añadimos a la escena
-    this.add (ambientLight);
+    this.add (this.ambientLight);
     
     // Se crea una luz focal que va a ser la luz principal de la escena
     // La luz focal, además tiene una posición, y un punto de mira
@@ -303,7 +315,6 @@ class MyScene extends THREE.Scene {
     // Se actualiza la posición de la cámara según su controlador
     this.cameraControl.update();
 
-
     this.blake.update();
     for(var i = 0; i < this.crates.length; i++){
       if(this.crates[i] != null){
@@ -360,8 +371,6 @@ class MyScene extends THREE.Scene {
         }
       }
     }
-
-    //console.log(this.blake.jumping);
 
     if(shouldFall && !this.blake.jumping){
       this.blake.fall();
@@ -438,7 +447,7 @@ class MyScene extends THREE.Scene {
       this.platforms[0].crearAnimacion({x : 0, z : 0}, {x : 5, z : 0}, 2000, 1000);
       return;
     }
-    console.log(tecla);
+
     if(tecla == "Q"){
       this.switchDimensions();
       return;
