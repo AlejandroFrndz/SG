@@ -4,6 +4,7 @@
 import * as THREE from '../libs/three.module.js'
 import { GUI } from '../libs/dat.gui.module.js'
 import { TrackballControls } from '../libs/TrackballControls.js'
+import { FirstPersonControls } from '../libs/FirstPersonControls.js';
 import * as TWEEN from '../libs/tween.esm.js'
 
 // Clases de mi proyecto
@@ -68,7 +69,7 @@ class MyScene extends THREE.Scene {
     
     //Creación del personaje principal
     //Blake
-    this.blake = new Blake();
+    this.blake = new Blake(this.camera);
     this.add(this.blake);
 
     //Creación de los elementos de la escena, dividos en plataformas
@@ -83,7 +84,7 @@ class MyScene extends THREE.Scene {
 
     //#region Plataforma 1. Contiene a Blake al comienzo
       //Plataforma
-      platform = new Platform(5,5,0);
+      platform = new Platform(7,5,0);
       this.platforms.push(platform);
       this.add(platform);
       platform.incluirBlake(this.blake);
@@ -104,14 +105,14 @@ class MyScene extends THREE.Scene {
       //Frutas
       fruit = new Fruit();
       this.add(fruit);
-      fruit.position.set(2,0,2);
+      fruit.position.set(2,0,-2);
       this.fruits.push(fruit);
       platform.incluir(fruit);
 
       fruit = new Fruit();
       this.add(fruit);
       this.fruits.push(fruit);
-      fruit.position.set(-2,0,2);
+      fruit.position.set(-2,0,-2);
       platform.incluir(fruit);
     //#endregion    
 
@@ -119,7 +120,103 @@ class MyScene extends THREE.Scene {
       //Plataforma
       platform = new Platform(7,5,-1,negativeColor);
       this.platforms.push(platform);
-      platform.position.set(4,0,6);
+      platform.posicionar(4,0,-6);
+      this.add(platform);
+      platform.crearAnimacion({x : 0, z : 0}, {x : 5, z : 0}, 2000, 1000);
+    //#endregion
+
+    //#region InterPlatform 2-3
+      //Cajas
+      crate = new Crate(10,1,positiveColor);
+      this.add(crate);
+      this.crates.push(crate);
+      crate.position.set(6.5,0,-12);
+
+      crate = new Crate(10,-1,negativeColor);
+      this.add(crate);
+      this.crates.push(crate);
+      crate.position.set(7.5,0,-12);
+
+      crate = new Crate(10,1,positiveColor);
+      this.add(crate);
+      this.crates.push(crate);
+      crate.position.set(8.5,0,-12);
+
+      fruit = new Fruit();
+      fruit.position.set(7.5,2,-15);
+      this.fruits.push(fruit);
+      this.add(fruit);
+
+      crate = new Crate(10,-1,negativeColor);
+      this.add(crate);
+      this.crates.push(crate);
+      crate.position.set(7.5,0,-17);
+
+      fruit = new Fruit();
+      fruit.position.set(7.5,2,-20);
+      this.fruits.push(fruit);
+      this.add(fruit);
+
+      crate = new Crate(10,1,positiveColor);
+      this.add(crate);
+      this.crates.push(crate);
+      crate.position.set(7.5,0,-22);
+    //#endregion
+
+    //#region Plataforma 3
+      //Plataforma
+      platform = new Platform(8,8,-1,negativeColor);
+      this.platforms.push(platform);
+      platform.posicionar(3,0,-28);
+      this.add(platform);
+
+      //Frutas
+      for(var i = 0.5; i < 4; i++){
+        for(var j = 0.5; j < 4; j++){
+          fruit = new Fruit();
+          fruit.position.set(3+i-4,0,-28-j+4);
+          this.add(fruit);
+          this.fruits.push(fruit);
+        }
+      }
+    //#endregion
+
+    //#region InterPlatform 3-4
+      platform = new Platform(1,1,1,positiveColor);
+      platform.posicionar(6,0,-38);
+      this.add(platform);
+      this.platforms.push(platform);
+
+      platform = new Platform(1,1,-1,negativeColor);
+      platform.posicionar(0,0,-40);
+      this.add(platform);
+      this.platforms.push(platform);
+
+      platform = new Platform(10,8,-1,negativeColor);
+      platform.posicionar(0,0,-50);
+      this.add(platform);
+      this.platforms.push(platform);
+      platform.crearAnimacion({x: 0, z:0}, {x: 0, z : -40}, 10000, 1500);
+
+      for(var i = 0; i < 20; i++){
+        var num = Math.random();
+        if(num > 0.5){
+          var side = 1;
+        }
+        else{
+          side = -1;
+        }
+        fruit = new Fruit();
+        fruit.position.set(Math.random()*5*side,0,-50-i*1.5);
+        this.fruits.push(fruit);
+        this.add(fruit);
+      }
+    //#endregion
+
+    //#region Plataforma 4
+      platform = new Platform(10,10,0);
+      platform.posicionar(0,0,-99);
+      this.platforms.push(platform);
       this.add(platform);
     //#endregion
 
@@ -132,13 +229,16 @@ class MyScene extends THREE.Scene {
 
     //Establecimiento de la dimensión
     this.dimension = -1;
-    this.switchDimensions();
+    this.switchDimensions(true);
 
+    this.tiempoAnterior = Date.now();
 
+    this.godMode = false;
 
   }
 
-  switchDimensions(){
+  switchDimensions(firstTime){
+    console.log("dentro");
     var dimension = this.dimension * -1;
     var cambiar = true;
 
@@ -154,8 +254,10 @@ class MyScene extends THREE.Scene {
 
     for(var i = 0; i < this.platforms.length && cambiar; i++){
       if(this.platforms[i].dimension == dimension){
-        if(this.checkColisionPlatforms(this.platforms[i]) && !this.blake.jumping){
-          cambiar = false;
+        if(!firstTime){
+          if(this.checkColisionPlatforms(this.platforms[i]) && !this.blake.jumping){
+            cambiar = false;
+          }
         }
       }
     }
@@ -180,7 +282,7 @@ class MyScene extends THREE.Scene {
           this.platforms[i].toggleWireFrame(true);
         }
       }
-
+  
       this.dimension = dimension;
     }
   }
@@ -190,18 +292,22 @@ class MyScene extends THREE.Scene {
     //   El ángulo del campo de visión vértical en grados sexagesimales
     //   La razón de aspecto ancho/alto
     //   Los planos de recorte cercano y lejano
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera2 = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
     // También se indica dónde se coloca
-    this.camera.position.set (10, 5, 10);
+    this.camera.position.set (0, 5, 10);
+    this.camera2.position.set (10,5,10);
     // Y hacia dónde mira
     var look = new THREE.Vector3 (0,0,0);
     this.camera.lookAt(look);
     this.add (this.camera);
+    this.add (this.camera2);
     
+    this.activeCamera = this.camera;
     // Para el control de cámara usamos una clase que ya tiene implementado los movimientos de órbita
     
-    this.cameraControl = new TrackballControls (this.camera, this.renderer.domElement);
-    
+    this.cameraControl = new FirstPersonControls (this.camera2, this.renderer.domElement);
+    this.clock = new THREE.Clock();
     // Se configuran las velocidades de los movimientos
     this.cameraControl.rotateSpeed = 5;
     this.cameraControl.zoomSpeed = -2;
@@ -275,7 +381,7 @@ class MyScene extends THREE.Scene {
   getCamera () {
     // En principio se devuelve la única cámara que tenemos
     // Si hubiera varias cámaras, este método decidiría qué cámara devuelve cada vez que es consultado
-    return this.camera;
+    return this.activeCamera;
   }
   
   setCameraAspect (ratio) {
@@ -297,7 +403,8 @@ class MyScene extends THREE.Scene {
 
   update () {
     // Este método debe ser llamado cada vez que queramos visualizar la escena de nuevo.
-    
+    var tiempoActual = Date.now();
+    var deltaTime = (tiempoActual-this.tiempoAnterior)/1000;
     // Literalmente le decimos al navegador: "La próxima vez que haya que refrescar la pantalla, llama al método que te indico".
     // Si no existiera esta línea,  update()  se ejecutaría solo la primera vez.
     requestAnimationFrame(() => this.update())
@@ -313,9 +420,9 @@ class MyScene extends THREE.Scene {
     this.axis.visible = this.guiControls.axisOnOff;
     
     // Se actualiza la posición de la cámara según su controlador
-    this.cameraControl.update();
+    this.cameraControl.update(this.clock.getDelta());
 
-    this.blake.update();
+    this.blake.update(deltaTime);
     for(var i = 0; i < this.crates.length; i++){
       if(this.crates[i] != null){
         if(this.crates[i].dimension == this.dimension || this.crates[i].dimension == 0){
@@ -323,10 +430,11 @@ class MyScene extends THREE.Scene {
             if(this.blake.jumping && this.blake.jumpNode.position.y >= (this.crates[i].faceTop.position.y - 0.5)){
               this.crates[i].startAnimation();
               this.blake.bounce();
+              this.blakePlatform.excluirBlake();
               this.crates[i] = null;
             }
             else{
-              this.blake.trasladar(-0.1);
+              this.blake.trasladar(-1,deltaTime);
             }
             break;
           }
@@ -372,12 +480,16 @@ class MyScene extends THREE.Scene {
       }
     }
 
+    if(this.godMode){
+      shouldFall = false;
+    }
     if(shouldFall && !this.blake.jumping){
       this.blake.fall();
     }
 
     TWEEN.update();
     this.gameUI.innerHTML = MyScene.fruitCount;
+    this.tiempoAnterior = tiempoActual;
   }
 
   checkColisionCrates(crate){
@@ -417,7 +529,7 @@ class MyScene extends THREE.Scene {
     fruit.getWorldPosition(this.objPos);
 
     var distance = this.blakePos.distanceTo(this.objPos);
-    return distance < 0.6;
+    return distance < 0.8;
   }
 
   checkColisionPlatforms(platform){
@@ -426,30 +538,47 @@ class MyScene extends THREE.Scene {
     }
 
     return (
-      ((this.blake.model.position.x + this.blake.position.x) <= (platform.position.x + (platform.x + Platform.Margen))) &&
-      ((this.blake.model.position.x + this.blake.position.x) >= (platform.position.x - (platform.x + Platform.Margen))) &&
-      ((this.blake.model.position.z + this.blake.position.z) <= (platform.position.z + (platform.z + Platform.Margen))) &&
-      ((this.blake.model.position.z + this.blake.position.z) >= (platform.position.z - (platform.z + Platform.Margen)))
+      ((this.blake.model.position.x + this.blake.position.x) <= (platform.realPos.x + (platform.x + Platform.Margen))) &&
+      ((this.blake.model.position.x + this.blake.position.x) >= (platform.realPos.x - (platform.x + Platform.Margen))) &&
+      ((this.blake.model.position.z + this.blake.position.z) <= (platform.realPos.z + (platform.z + Platform.Margen))) &&
+      ((this.blake.model.position.z + this.blake.position.z) >= (platform.realPos.z - (platform.z + Platform.Margen)))
       );
   }
 
   onKeyDown(event){
     var x = event.wich || event.keyCode;
 
+    /*
     if(x == 17){
       this.cameraControl.enabled = true;
       return;
     }
+    */
 
     var tecla = String.fromCharCode(x);
     
     if(tecla == "X"){
-      this.platforms[0].crearAnimacion({x : 0, z : 0}, {x : 5, z : 0}, 2000, 1000);
       return;
     }
 
+    if(tecla == "P"){
+      this.cameraControl.enabled = true;
+      this.activeCamera = this.camera2;
+      return;
+    }
+
+    if(tecla == "O"){
+      this.cameraControl.enabled = false;
+      this.activeCamera = this.camera;
+      return;
+    }
+
+    if(tecla == "G"){
+      this.godMode = !this.godMode;
+    }
+
     if(tecla == "Q"){
-      this.switchDimensions();
+      this.switchDimensions(false);
       return;
     }
 
@@ -465,10 +594,12 @@ class MyScene extends THREE.Scene {
   onKeyUp(event){
     var x = event.wich || event.keyCode;
 
+    /*
     if(x == 17){
       this.cameraControl.enabled = false;
       return;
     }
+    */
 
     var tecla = String.fromCharCode(x);
     this.blake.stop(tecla);

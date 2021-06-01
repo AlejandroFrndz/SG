@@ -25,13 +25,18 @@ class Platform extends THREE.Object3D{
         this.mat = new THREE.MeshPhongMaterial ({map: this.texture, normalMap: this.normalMap});
 
         this.mesh = new THREE.Mesh(geom,this.mat);
-        this.add(this.mesh);
+        this.animationNode = new THREE.Object3D();
+        this.animationNode.add(this.mesh);
+
+        this.realPos = new THREE.Vector3();
+        this.realPos.addVectors(this.animationNode.position,this.position);
+        this.add(this.animationNode);
     }
 
     incluir(obj){
         this.objs.push(obj);
         var objP = obj.position.clone();
-        objP.subVectors(objP,this.position);
+        objP.subVectors(objP,this.realPos);
         this.dobjs.push(objP);
     }
     
@@ -46,7 +51,7 @@ class Platform extends THREE.Object3D{
         if(this.blake == null){
             this.blake = blake;
             this.dblake = blake.position.clone();
-            this.dblake.subVectors(this.dblake,this.position);
+            this.dblake.subVectors(this.dblake,this.realPos);
         }
     }
 
@@ -63,15 +68,16 @@ class Platform extends THREE.Object3D{
         this.movimiento = new TWEEN.Tween(origin)
         .to(destiny,time)
         .onUpdate(function(){
-            that.position.x = origin.x;
-            that.position.z = origin.z;
+            that.animationNode.position.x = origin.x;
+            that.animationNode.position.z = origin.z;
+            that.realPos.addVectors(that.animationNode.position,that.position);
             for(var i = 0; i < that.objs.length; i++){
                 var obj = that.objs[i];
-                obj.position.copy(that.position);
+                obj.position.copy(that.realPos);
                 obj.position.add(that.dobjs[i]);
             }
             if(that.blake != null){
-                that.blake.position.copy(that.position);
+                that.blake.position.copy(that.realPos);
                 that.blake.position.add(that.dblake);
             }
         })
@@ -96,6 +102,11 @@ class Platform extends THREE.Object3D{
           this.mat.color.set(0xFFFFFF);
           this.mat.needsUpdate = true;
         }
+    }
+
+    posicionar(x,y,z){
+        this.position.set(x,y,z);
+        this.realPos.addVectors(this.position,this.animationNode.position);
     }
 }
 

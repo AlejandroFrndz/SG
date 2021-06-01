@@ -6,10 +6,11 @@ import { Marker } from './Marker.js';
 const OrientationEnum = Object.freeze({"N":1, "NE":2, "E":3, "SE":4, "S":5, "SW":6, "W":7, "NW":8});
 
 class Blake extends THREE.Object3D{
-    constructor(){
+    constructor(camara){
         super();
         this.clock = new THREE.Clock();
         var that = this;
+        this.camara = camara;
         this.loaded = false;
         var loader = new GLTFLoader();
         loader.load( '../models/gltf/blake_the_adventurer_version_3/blake.glb', function ( gltf ) {
@@ -25,10 +26,13 @@ class Blake extends THREE.Object3D{
             that.jumpNode.add(that.rotationNode);
             that.bounceNode = new THREE.Object3D();
             that.bounceNode.add(that.jumpNode);
+            that.cameraNode = new THREE.Object3D();
+            that.cameraNode.add(camara);
             // Y las animaciones en el atributo  animations
             var animations = gltf.animations;
             // No olvidarse de colgar el modelo del Object3D de esta instancia de la clase (this)
             that.add( that.bounceNode);
+            that.add(that.cameraNode);
             that.createActions(that.model,animations);
             that.createTweens();
             that.loaded = true;
@@ -54,6 +58,8 @@ class Blake extends THREE.Object3D{
         this.add(this.marker);
 
         this.bounceCleanUp = null;
+
+        this.speed = 5;
     }
 
     createTweens(){
@@ -635,23 +641,24 @@ class Blake extends THREE.Object3D{
         }
     }
 
-    trasladar(d){
+    trasladar(dir,deltaTime){
         if(!this.falling){
-            this.model.translateOnAxis(this.forward,d);
+            this.model.translateOnAxis(this.forward,dir*this.speed*deltaTime);
+            this.cameraNode.position.copy(this.model.position);
+            this.camara.lookAt(new THREE.Vector3().addVectors(this.model.position,this.position));
             this.marker.position.x = this.model.position.x;
             this.marker.position.z = this.model.position.z;
         }
-        
     }
 
-    update () {
+    update (deltaTime) {
         if(this.model){
             this.checkAnimation();
             var dt = this.clock.getDelta();
             this.mixer.update (dt);
             if(this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight){
                 this.setOrientation();
-                this.trasladar(0.1);
+                this.trasladar(1,deltaTime);
             }
         }
     }
