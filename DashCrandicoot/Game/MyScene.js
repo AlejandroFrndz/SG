@@ -3,9 +3,9 @@
 
 import * as THREE from '../libs/three.module.js'
 import { GUI } from '../libs/dat.gui.module.js'
-import { TrackballControls } from '../libs/TrackballControls.js'
-import { FirstPersonControls } from '../libs/FirstPersonControls.js';
+import { FlyControls } from '../libs/FlyControls.js';
 import * as TWEEN from '../libs/tween.esm.js'
+import * as STATS from '../libs/stats.module.js'
 
 // Clases de mi proyecto
 
@@ -14,6 +14,7 @@ import { Blake } from './Blake.js'
 import { Fruit } from './Fruit.js'
 import { Platform } from './Platform.js'
 import { Pedestal } from './Pedestal.js'
+import { DimensionLight } from './dimensionLight.js';
 
 //Constantes
 
@@ -21,6 +22,8 @@ const positiveColor = 0x0000FF;
 const negativeColor = 0xFF0000;
 const positiveLightColor = 0xaaaaff;
 const negativeLightColor = 0xffaaaa;
+
+var stats
 
 /// La clase fachada del modelo
 /**
@@ -222,8 +225,10 @@ class MyScene extends THREE.Scene {
     //#endregion
 
     //Pedestal
+    /*
     this.pedestal = new Pedestal();
     this.add(this.pedestal);
+      */
 
     //Luces
     this.createLights ();
@@ -243,7 +248,6 @@ class MyScene extends THREE.Scene {
   }
 
   switchDimensions(firstTime){
-    console.log("dentro");
     var dimension = this.dimension * -1;
     var cambiar = true;
 
@@ -287,7 +291,8 @@ class MyScene extends THREE.Scene {
           this.platforms[i].toggleWireFrame(true);
         }
       }
-  
+      
+      this.blake.lights.switchDimensions(dimension);
       this.dimension = dimension;
     }
   }
@@ -311,14 +316,8 @@ class MyScene extends THREE.Scene {
     this.activeCamera = this.camera;
     // Para el control de cámara usamos una clase que ya tiene implementado los movimientos de órbita
     
-    this.cameraControl = new FirstPersonControls (this.camera2, this.renderer.domElement);
+    this.cameraControl = new FlyControls (this.camera2, this.renderer.domElement);
     this.clock = new THREE.Clock();
-    // Se configuran las velocidades de los movimientos
-    this.cameraControl.rotateSpeed = 5;
-    this.cameraControl.zoomSpeed = -2;
-    this.cameraControl.panSpeed = 0.5;
-    // Debe orbitar con respecto al punto de mira de la cámara
-    this.cameraControl.target = look;
     this.cameraControl.enabled = false;
   }
   
@@ -360,13 +359,11 @@ class MyScene extends THREE.Scene {
     // La luz focal, además tiene una posición, y un punto de mira
     // Si no se le da punto de mira, apuntará al (0,0,0) en coordenadas del mundo
     // En este caso se declara como   this.atributo   para que sea un atributo accesible desde otros métodos.
-    this.spotLight = new THREE.SpotLight( 0xffffff, this.guiControls.lightIntensity );
-    this.spotLight.position.set( 60, 60, 40 );
-    //this.add (this.spotLight);
+
 
     //Luz direccional. Representa el Sol
     this.sun = new THREE.DirectionalLight(0xfdfbd3, 0.6);
-    this.sun.position.set(100,110,-150);
+    this.sun.position.set(100,110,-150);    
     this.add(this.sun);
     var sunTarget = new THREE.Object3D();
     sunTarget.position.set(0,0,0);
@@ -376,6 +373,17 @@ class MyScene extends THREE.Scene {
     var helper = new THREE.DirectionalLightHelper(this.sun);
     this.add(helper);
 
+    //Sombras
+    this.sun.castShadow = true;
+    this.sun.shadow.mapSize.width = 2048;
+    this.sun.shadow.mapSize.height = 2048;
+    this.sun.shadow.camera.left = -70;
+    this.sun.shadow.camera.bottom = -70;
+    this.sun.shadow.camera.right = 70;
+    this.sun.shadow.camera.top = 70;
+    this.sun.shadow.camera.near = 0.5;
+    this.sun.shadow.camera.far = 500;
+
     //Luz para el pedestal donde termina el nivel
     this.pedestalLight = new THREE.SpotLight(0xffffff,1,6,Math.PI/11,0,0);
     this.pedestalLight.position.set(0,5,-99);
@@ -384,11 +392,12 @@ class MyScene extends THREE.Scene {
     this.add(target);
     this.pedestalLight.target = target;
     this.add(this.pedestalLight);
+    //Configuración de las sombras
+    this.pedestalLight.castShadow = true;
     //Cilindro colocado sobre el pedestal para simular la luz que rebotarían las particulas en el aire y por tanto harían visible el haz del foco
     var visiblePedestalLight = new THREE.CylinderBufferGeometry(1.5,1.5,100,50,50);
     var mat = new THREE.MeshLambertMaterial({color:0x000000,emissive:0xffffff,emissiveIntensity:1,transparent:true,opacity:0.2});
     visiblePedestalLight.translate(0,50,-99);
-
     var mesh = new THREE.Mesh(visiblePedestalLight,mat);
     this.add(mesh);
   }
@@ -408,6 +417,10 @@ class MyScene extends THREE.Scene {
     // La visualización se muestra en el lienzo recibido
     $(myCanvas).append(renderer.domElement);
     
+    //Se configura la proyección de sombras
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+
     return renderer;  
   }
   
@@ -447,7 +460,7 @@ class MyScene extends THREE.Scene {
 
     // Se actualizan los elementos de la escena para cada frame
     // Se actualiza la intensidad de la luz con lo que haya indicado el usuario en la gui
-    this.spotLight.intensity = this.guiControls.lightIntensity;
+    //this.spotLight.intensity = this.guiControls.lightIntensity;
     
     // Se muestran o no los ejes según lo que idique la GUI
     this.axis.visible = this.guiControls.axisOnOff;
@@ -523,6 +536,8 @@ class MyScene extends THREE.Scene {
     TWEEN.update();
     this.gameUI.innerHTML = MyScene.fruitCount;
     this.tiempoAnterior = tiempoActual;
+
+    stats.update();
   }
 
   checkColisionCrates(crate){
@@ -534,7 +549,7 @@ class MyScene extends THREE.Scene {
     crate.getWorldPosition(this.objPos);
 
     var distance = this.blakePos.distanceTo(this.objPos);
-    return distance < 0.8;
+    return distance < 1;
   }
 
   checkMarkerColisionCrates(crate){
@@ -546,10 +561,10 @@ class MyScene extends THREE.Scene {
     }
 
     return (
-      ((this.blake.marker.position.x + this.blake.position.x) <= (crate.position.x + 0.5)) &&
-      ((this.blake.marker.position.x + this.blake.position.x) >= (crate.position.x - 0.5)) &&
-      ((this.blake.marker.position.z + this.blake.position.z) <= (crate.position.z + 0.5)) &&
-      ((this.blake.marker.position.z + this.blake.position.z) >= (crate.position.z - 0.5))
+      ((this.blake.marker.position.x + this.blake.position.x) <= (crate.position.x + 0.8)) &&
+      ((this.blake.marker.position.x + this.blake.position.x) >= (crate.position.x - 0.8)) &&
+      ((this.blake.marker.position.z + this.blake.position.z) <= (crate.position.z + 0.8)) &&
+      ((this.blake.marker.position.z + this.blake.position.z) >= (crate.position.z - 0.8))
       );
   }
 
@@ -591,6 +606,12 @@ class MyScene extends THREE.Scene {
     var tecla = String.fromCharCode(x);
     
     if(tecla == "X"){
+      if(stats.domElement.style.display == "block"){
+        stats.domElement.style.display = "none";
+      }
+      else{
+        stats.domElement.style.display = "block";
+      }
       return;
     }
 
@@ -653,7 +674,17 @@ $(function () {
   //window.addEventListener ("mousedown",(event) => scene.onMouseDown(event));
   window.addEventListener("keydown", (event) => scene.onKeyDown(event));
   window.addEventListener("keyup", (event) => scene.onKeyUp(event));
-  
+
+  stats = new STATS.default();
+  stats.setMode(0);
+
+  stats.domElement.style.position = 'absolute';
+  stats.domElement.style.left = '0';
+  stats.domElement.style.top = '0';
+  stats.domElement.style.display = "none";
+
+  document.body.appendChild(stats.domElement);
+
   // Que no se nos olvide, la primera visualización.
   scene.update();
 });

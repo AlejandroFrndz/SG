@@ -2,6 +2,7 @@ import * as THREE from '../libs/three.module.js';
 import { GLTFLoader } from '../libs/GLTFLoader.js';
 import * as TWEEN from '../libs/tween.esm.js';
 import { Marker } from './Marker.js';
+import { DimensionLight } from './dimensionLight.js';
 
 const OrientationEnum = Object.freeze({"N":1, "NE":2, "E":3, "SE":4, "S":5, "SW":6, "W":7, "NW":8});
 
@@ -35,6 +36,12 @@ class Blake extends THREE.Object3D{
             that.add(that.cameraNode);
             that.createActions(that.model,animations);
             that.createTweens();
+
+            that.model.traverseVisible(function(unNodo){
+                unNodo.castShadow = true;
+                unNodo.receiveShadow = true;
+            });
+
             that.loaded = true;
         }, undefined, function ( e ) { console.error( e ); }
         );
@@ -56,6 +63,9 @@ class Blake extends THREE.Object3D{
 
         this.marker = new Marker();
         this.add(this.marker);
+
+        this.lights = new DimensionLight();
+        this.add(this.lights);
 
         this.bounceCleanUp = null;
 
@@ -648,11 +658,14 @@ class Blake extends THREE.Object3D{
             this.camara.lookAt(new THREE.Vector3().addVectors(this.model.position,this.position));
             this.marker.position.x = this.model.position.x;
             this.marker.position.z = this.model.position.z;
+            this.lights.position.copy(this.model.position);
+            this.lights.position.y = this.jumpNode.position.y + this.bounceNode.position.y;
         }
     }
 
     update (deltaTime) {
         if(this.model){
+            this.lights.position.y = this.jumpNode.position.y + this.bounceNode.position.y;
             this.checkAnimation();
             var dt = this.clock.getDelta();
             this.mixer.update (dt);

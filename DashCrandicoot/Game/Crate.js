@@ -69,6 +69,10 @@ class Crate extends THREE.Object3D{
         this.faceTop.userData = this;
         this.faceBottom.userData = this;
 
+        this.traverseVisible(function(unNodo){
+          unNodo.castShadow = true;
+        })
+
       }
 
       createAnimation(){
@@ -118,6 +122,9 @@ class Crate extends THREE.Object3D{
           this.mat.map = null;
           this.mat.normalMap = null;
           this.mat.needsUpdate = true;
+          this.traverseVisible(function(unNodo){
+            unNodo.castShadow = false;
+          })
         }
         else{
           this.mat.wireframe = false;
@@ -125,6 +132,9 @@ class Crate extends THREE.Object3D{
           this.mat.normalMap = this.normalMap;
           this.mat.color.set(0xFFFFFF);
           this.mat.needsUpdate = true;
+          this.traverseVisible(function(unNodo){
+            unNodo.castShadow = true;
+          })
         }
       }
 

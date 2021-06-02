@@ -20,10 +20,10 @@ var FlyControls = function ( object, domElement ) {
 
 	// API
 
-	this.movementSpeed = 1.0;
-	this.rollSpeed = 0.005;
+	this.movementSpeed = 7.0;
+	this.rollSpeed = 0.5;
 
-	this.dragToLook = false;
+	this.dragToLook = true;
 	this.autoForward = false;
 
 	// disable default target object behavior

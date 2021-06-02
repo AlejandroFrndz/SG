@@ -25,6 +25,7 @@ class Platform extends THREE.Object3D{
         this.mat = new THREE.MeshPhongMaterial ({map: this.texture, normalMap: this.normalMap});
 
         this.mesh = new THREE.Mesh(geom,this.mat);
+        this.mesh.receiveShadow = true;
         this.animationNode = new THREE.Object3D();
         this.animationNode.add(this.mesh);
 
@@ -94,6 +95,7 @@ class Platform extends THREE.Object3D{
           this.mat.map = null;
           this.mat.normalMap = null;
           this.mat.needsUpdate = true;
+          this.mesh.receiveShadow = false;
         }
         else{
           this.mat.wireframe = false;
@@ -101,6 +103,7 @@ class Platform extends THREE.Object3D{
           this.mat.normalMap = this.normalMap;
           this.mat.color.set(0xFFFFFF);
           this.mat.needsUpdate = true;
+          this.mesh.receiveShadow = true;
         }
     }
 
