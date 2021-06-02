@@ -13,6 +13,7 @@ import { Crate } from './Crate.js'
 import { Blake } from './Blake.js'
 import { Fruit } from './Fruit.js'
 import { Platform } from './Platform.js'
+import { Pedestal } from './Pedestal.js'
 
 //Constantes
 
@@ -196,7 +197,7 @@ class MyScene extends THREE.Scene {
       platform.posicionar(0,0,-50);
       this.add(platform);
       this.platforms.push(platform);
-      platform.crearAnimacion({x: 0, z:0}, {x: 0, z : -40}, 10000, 1500);
+      platform.crearAnimacion({x: 0, z:0}, {x: 0, z : -40}, 10000, 3000);
 
       for(var i = 0; i < 20; i++){
         var num = Math.random();
@@ -219,6 +220,10 @@ class MyScene extends THREE.Scene {
       this.platforms.push(platform);
       this.add(platform);
     //#endregion
+
+    //Pedestal
+    this.pedestal = new Pedestal();
+    this.add(this.pedestal);
 
     //Luces
     this.createLights ();
@@ -357,7 +362,35 @@ class MyScene extends THREE.Scene {
     // En este caso se declara como   this.atributo   para que sea un atributo accesible desde otros métodos.
     this.spotLight = new THREE.SpotLight( 0xffffff, this.guiControls.lightIntensity );
     this.spotLight.position.set( 60, 60, 40 );
-    this.add (this.spotLight);
+    //this.add (this.spotLight);
+
+    //Luz direccional. Representa el Sol
+    this.sun = new THREE.DirectionalLight(0xfdfbd3, 0.6);
+    this.sun.position.set(100,110,-150);
+    this.add(this.sun);
+    var sunTarget = new THREE.Object3D();
+    sunTarget.position.set(0,0,0);
+    this.add(sunTarget);
+    this.sun.target = sunTarget;
+    this.sun.target.updateMatrixWorld();
+    var helper = new THREE.DirectionalLightHelper(this.sun);
+    this.add(helper);
+
+    //Luz para el pedestal donde termina el nivel
+    this.pedestalLight = new THREE.SpotLight(0xffffff,1,6,Math.PI/11,0,0);
+    this.pedestalLight.position.set(0,5,-99);
+    var target = new THREE.Object3D();
+    target.position.set(0,0,-99);
+    this.add(target);
+    this.pedestalLight.target = target;
+    this.add(this.pedestalLight);
+    //Cilindro colocado sobre el pedestal para simular la luz que rebotarían las particulas en el aire y por tanto harían visible el haz del foco
+    var visiblePedestalLight = new THREE.CylinderBufferGeometry(1.5,1.5,100,50,50);
+    var mat = new THREE.MeshLambertMaterial({color:0x000000,emissive:0xffffff,emissiveIntensity:1,transparent:true,opacity:0.2});
+    visiblePedestalLight.translate(0,50,-99);
+
+    var mesh = new THREE.Mesh(visiblePedestalLight,mat);
+    this.add(mesh);
   }
   
   createRenderer (myCanvas) {
