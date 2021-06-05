@@ -7,7 +7,7 @@ import { DimensionLight } from './dimensionLight.js';
 const OrientationEnum = Object.freeze({"N":1, "NE":2, "E":3, "SE":4, "S":5, "SW":6, "W":7, "NW":8});
 
 class Blake extends THREE.Object3D{
-    constructor(camara){
+    constructor(camara,escena){
         super();
         this.clock = new THREE.Clock();
         var that = this;
@@ -43,6 +43,7 @@ class Blake extends THREE.Object3D{
             });
 
             that.loaded = true;
+            escena.state = 2;
         }, undefined, function ( e ) { console.error( e ); }
         );
 

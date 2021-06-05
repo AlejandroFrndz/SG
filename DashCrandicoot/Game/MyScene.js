@@ -13,15 +13,11 @@ import { Crate } from './Crate.js'
 import { Blake } from './Blake.js'
 import { Fruit } from './Fruit.js'
 import { Platform } from './Platform.js'
-import { Pedestal } from './Pedestal.js'
-import { DimensionLight } from './dimensionLight.js';
 
 //Constantes
-
 const positiveColor = 0x0000FF;
 const negativeColor = 0xFF0000;
-const positiveLightColor = 0xaaaaff;
-const negativeLightColor = 0xffaaaa;
+const SceneStates = Object.freeze({"LOADING":1, "STARTING":2, "PLAYING":3, "ENDING":4});
 
 var stats
 
@@ -37,6 +33,11 @@ class MyScene extends THREE.Scene {
 
   constructor (myCanvas) { 
     super();
+
+    //Establecemos el estado de la escena
+    this.state = SceneStates.LOADING;
+    this.godMode = false;
+    this.debug = false;
     
     // Lo primero, crear el visualizador, pasándole el lienzo sobre el que realizar los renderizados.
     this.renderer = this.createRenderer(myCanvas);
@@ -73,7 +74,7 @@ class MyScene extends THREE.Scene {
     
     //Creación del personaje principal
     //Blake
-    this.blake = new Blake(this.camera);
+    this.blake = new Blake(this.blakeCamera,this);
     this.add(this.blake);
 
     //Creación de los elementos de la escena, dividos en plataformas
@@ -242,31 +243,28 @@ class MyScene extends THREE.Scene {
     this.switchDimensions(true);
 
     this.tiempoAnterior = Date.now();
-
-    this.godMode = false;
-
   }
 
   switchDimensions(firstTime){
     var dimension = this.dimension * -1;
     var cambiar = true;
 
-    for(var i = 0; i < this.crates.length && cambiar; i++){
-      if(this.crates[i] != null){
-        if(this.crates[i].dimension == dimension){
-          if(this.checkColisionCrates(this.crates[i])){
-            cambiar = false;
+    if(!firstTime){
+      for(var i = 0; i < this.crates.length && cambiar; i++){
+        if(this.crates[i] != null){
+          if(this.crates[i].dimension == dimension){
+            if(this.colisionCrate(this.crates[i])){
+              cambiar = false;
+            }
           }
         }
       }
-    }
 
-    for(var i = 0; i < this.platforms.length && cambiar; i++){
-      if(this.platforms[i].dimension == dimension){
-        if(!firstTime){
-          if(this.checkColisionPlatforms(this.platforms[i]) && !this.blake.jumping){
-            cambiar = false;
-          }
+      for(var i = 0; i < this.platforms.length && cambiar; i++){
+        if(this.platforms[i].dimension == dimension){
+            if(this.colisionPlatform(this.platforms[i]) && !this.blake.jumping){
+              cambiar = false;
+            }
         }
       }
     }
@@ -298,27 +296,24 @@ class MyScene extends THREE.Scene {
   }
   
   createCamera () {
-    // Para crear una cámara le indicamos
-    //   El ángulo del campo de visión vértical en grados sexagesimales
-    //   La razón de aspecto ancho/alto
-    //   Los planos de recorte cercano y lejano
-    this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.camera2 = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    // También se indica dónde se coloca
-    this.camera.position.set (0, 5, 10);
-    this.camera2.position.set (10,5,10);
-    // Y hacia dónde mira
+    //Camara Principal, solidaria con el desplazamiento de Blake
+    this.blakeCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.blakeCamera.position.set(0,5,10);
     var look = new THREE.Vector3 (0,0,0);
-    this.camera.lookAt(look);
-    this.add (this.camera);
-    this.add (this.camera2);
-    
-    this.activeCamera = this.camera;
-    // Para el control de cámara usamos una clase que ya tiene implementado los movimientos de órbita
-    
-    this.cameraControl = new FlyControls (this.camera2, this.renderer.domElement);
+    this.blakeCamera.lookAt(look);
+    this.add (this.blakeCamera);
+
+    //Camara Debug. Dentro del modo debug, puede activarse esta cámara para visualizar la escena con mayor detalle
+    //Emplea la librería FlyControls, por lo que los controles son los propios de esta librería
+    this.debugCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.debugCamera.position.set (10,5,10);
+    this.add (this.debugCamera);
+    this.cameraControl = new FlyControls (this.debugCamera, this.renderer.domElement);
     this.clock = new THREE.Clock();
     this.cameraControl.enabled = false;
+
+    //Por defecto empieza activa la cámara de Blake
+    this.activeCamera = this.blakeCamera;
   }
   
   createGUI () {
@@ -347,33 +342,16 @@ class MyScene extends THREE.Scene {
   }
   
   createLights () {
-    // Se crea una luz ambiental, evita que se vean complentamente negras las zonas donde no incide de manera directa una fuente de luz
-    // La luz ambiental solo tiene un color y una intensidad
-    // Se declara como   var   y va a ser una variable local a este método
-    //    se hace así puesto que no va a ser accedida desde otros métodos
-    this.ambientLight = new THREE.AmbientLight(0xccddee, 0.20);
-    // La añadimos a la escena
-    this.add (this.ambientLight);
-    
-    // Se crea una luz focal que va a ser la luz principal de la escena
-    // La luz focal, además tiene una posición, y un punto de mira
-    // Si no se le da punto de mira, apuntará al (0,0,0) en coordenadas del mundo
-    // En este caso se declara como   this.atributo   para que sea un atributo accesible desde otros métodos.
-
+    //Luz Ambiental
+    var ambientLight = new THREE.AmbientLight(0xccddee, 0.20);
+    this.add (ambientLight);
 
     //Luz direccional. Representa el Sol
     this.sun = new THREE.DirectionalLight(0xfdfbd3, 0.6);
     this.sun.position.set(100,110,-150);    
     this.add(this.sun);
-    var sunTarget = new THREE.Object3D();
-    sunTarget.position.set(0,0,0);
-    this.add(sunTarget);
-    this.sun.target = sunTarget;
-    this.sun.target.updateMatrixWorld();
-    var helper = new THREE.DirectionalLightHelper(this.sun);
-    this.add(helper);
 
-    //Sombras
+    //Sombras de la luz direccional
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.width = 2048;
     this.sun.shadow.mapSize.height = 2048;
@@ -432,10 +410,12 @@ class MyScene extends THREE.Scene {
   
   setCameraAspect (ratio) {
     // Cada vez que el usuario modifica el tamaño de la ventana desde el gestor de ventanas de
-    // su sistema operativo hay que actualizar el ratio de aspecto de la cámara
-    this.camera.aspect = ratio;
-    // Y si se cambia ese dato hay que actualizar la matriz de proyección de la cámara
-    this.camera.updateProjectionMatrix();
+    // su sistema operativo hay que actualizar el ratio de aspecto de las cámaras
+    this.blakeCamera.aspect = ratio;
+    this.blakeCamera.updateProjectionMatrix();
+
+    this.debugCamera.aspect = ratio;
+    this.debugCamera.updateProjectionMatrix();
   }
     
   onWindowResize () {
@@ -457,22 +437,69 @@ class MyScene extends THREE.Scene {
     
     // Le decimos al renderizador "visualiza la escena que te indico usando la cámara que te estoy pasando"
     this.renderer.render (this, this.getCamera());
-
-    // Se actualizan los elementos de la escena para cada frame
-    // Se actualiza la intensidad de la luz con lo que haya indicado el usuario en la gui
-    //this.spotLight.intensity = this.guiControls.lightIntensity;
     
     // Se muestran o no los ejes según lo que idique la GUI
     this.axis.visible = this.guiControls.axisOnOff;
     
+    if(this.state == SceneStates.STARTING){
+      //Animación de la camara
+      this.state = SceneStates.PLAYING;
+    }
+
     // Se actualiza la posición de la cámara según su controlador
     this.cameraControl.update(this.clock.getDelta());
 
-    this.blake.update(deltaTime);
+    if(this.state == SceneStates.PLAYING){
+
+      //Se actualiza blake
+      this.blake.update(deltaTime);
+
+      //Se comprueban las colisiones con los objetos de la escena pertinentes
+
+      //Colision con las cajas
+      this.checkColisionCrates(deltaTime);
+
+      //Colision del marcador con las cajas, para colocarlo encima si procede
+      this.checkMarkerColisionCrates();
+
+      //Colision con las frutas
+      this.checkColisionFruits();
+
+      //Colision con las plataformas
+      this.checkColisionPlatforms();
+      
+    }
+
+    //Se actualizan las animaciones Tween
+    TWEEN.update();
+    //Se actualiza el contador de frutas recogidas
+    this.gameUI.innerHTML = MyScene.fruitCount;
+    //Se guarda el tiempo actual como anterior para el proximo update
+    this.tiempoAnterior = tiempoActual;
+
+    //Se actualiza el contador de fps
+    stats.update();
+  }
+
+  //Función que comprueba la colisión de blake con una caja concreta. Devuelve true si hay colision
+  colisionCrate(crate){
+    if(crate.broken){
+      return false;
+    }
+
+    this.blake.model.getWorldPosition(this.blakePos);
+    crate.getWorldPosition(this.objPos);
+
+    var distance = this.blakePos.distanceTo(this.objPos);
+    return distance < 1;
+  }
+
+  //Función que comprueba la colisión con todas las cajas de la escena que estén en la dimension actual. Si hay colisión, actua en consecuencia.
+  checkColisionCrates(deltaTime){
     for(var i = 0; i < this.crates.length; i++){
       if(this.crates[i] != null){
         if(this.crates[i].dimension == this.dimension || this.crates[i].dimension == 0){
-          if(this.checkColisionCrates(this.crates[i])){
+          if(this.colisionCrate(this.crates[i])){
             if(this.blake.jumping && this.blake.jumpNode.position.y >= (this.crates[i].faceTop.position.y - 0.5)){
               this.crates[i].startAnimation();
               this.blake.bounce();
@@ -487,76 +514,14 @@ class MyScene extends THREE.Scene {
         }
       }
     }
-
-    this.blake.marker.position.y = 0.001;
-    for(var i = 0; i < this.crates.length; i++){
-      if(this.crates[i] != null){
-        if(this.crates[i].dimension == this.dimension || this.crates[i].dimension == 0){
-          if(this.checkMarkerColisionCrates(this.crates[i])){
-            this.blake.marker.position.y = 1.005;
-            break;
-          }
-        }
-      }
-    }
-
-    for(var i = 0; i < this.fruits.length; i++){
-      if(this.fruits[i] != null){
-        if(this.checkColisionFruits(this.fruits[i])){
-          this.fruits[i].pickUp();
-          this.fruits[i] = null;
-          this.fruitCount++;
-          break;
-        }
-      }
-    }
-
-    var shouldFall = true;
-    for(var i = 0; i < this.platforms.length; i++){
-      if(this.platforms[i].dimension == this.dimension || this.platforms[i].dimension == 0){
-        if(this.checkColisionPlatforms(this.platforms[i]) && !this.blake.jumping){
-          if(this.blakePlatform != this.platforms[i]){
-            this.blakePlatform.excluirBlake();
-            this.blakePlatform = this.platforms[i];
-            this.blakePlatform.incluirBlake(this.blake);
-          }
-          shouldFall = false;
-          break;
-        }
-      }
-    }
-
-    if(this.godMode){
-      shouldFall = false;
-    }
-    if(shouldFall && !this.blake.jumping){
-      this.blake.fall();
-    }
-
-    TWEEN.update();
-    this.gameUI.innerHTML = MyScene.fruitCount;
-    this.tiempoAnterior = tiempoActual;
-
-    stats.update();
   }
 
-  checkColisionCrates(crate){
-    if(crate.broken || !this.blake.loaded){
-      return false;
-    }
-
-    this.blake.model.getWorldPosition(this.blakePos);
-    crate.getWorldPosition(this.objPos);
-
-    var distance = this.blakePos.distanceTo(this.objPos);
-    return distance < 1;
-  }
-
-  checkMarkerColisionCrates(crate){
+  //Comprueba la colisión del marcador con una caja concreta
+  markerColisionCrate(crate){
     if(crate == null){
       return false;
     }
-    if(crate.broken || !this.blake.loaded){
+    if(crate.broken){
       return false;
     }
 
@@ -568,11 +533,23 @@ class MyScene extends THREE.Scene {
       );
   }
 
-  checkColisionFruits(fruit){
-    if(!this.blake.loaded){
-      return false;
+  //Comprueba la colisión del marcador con todas las cajas de la escena que estén en la dimensión actual. Si hay colisión coloca el marcador encima
+  checkMarkerColisionCrates(){
+    this.blake.marker.position.y = 0.001;
+    for(var i = 0; i < this.crates.length; i++){
+      if(this.crates[i] != null){
+        if(this.crates[i].dimension == this.dimension || this.crates[i].dimension == 0){
+          if(this.markerColisionCrate(this.crates[i])){
+            this.blake.marker.position.y = 1.005;
+            break;
+          }
+        }
+      }
     }
+  }
 
+  //Comprueba la colisión de blake con una fruta concreta
+  colisionFruit(fruit){
     this.blake.model.getWorldPosition(this.blakePos);
     fruit.getWorldPosition(this.objPos);
 
@@ -580,11 +557,22 @@ class MyScene extends THREE.Scene {
     return distance < 0.8;
   }
 
-  checkColisionPlatforms(platform){
-    if(!this.blake.loaded){
-      return true;
+  //Comprueba la colisión de blake con todas las frutas de la escena. Si hay colisión la recoge
+  checkColisionFruits(){
+    for(var i = 0; i < this.fruits.length; i++){
+      if(this.fruits[i] != null){
+        if(this.colisionFruit(this.fruits[i])){
+          this.fruits[i].pickUp();
+          this.fruits[i] = null;
+          this.fruitCount++;
+          break;
+        }
+      }
     }
+  }
 
+  //Comprueba la colision de blake con una plataforma concreta
+  colisionPlatform(platform){
     return (
       ((this.blake.model.position.x + this.blake.position.x) <= (platform.realPos.x + (platform.x + Platform.Margen))) &&
       ((this.blake.model.position.x + this.blake.position.x) >= (platform.realPos.x - (platform.x + Platform.Margen))) &&
@@ -593,70 +581,105 @@ class MyScene extends THREE.Scene {
       );
   }
 
+  //Comprueba la colisión de blake con todas las plataformas de la escena en la dimensión actual. Se encarga por tanto de comprobar si blake debe caerse
+  checkColisionPlatforms(){
+    var shouldFall = true;
+
+    //Comprobamos si está sobre alguna plataforma, en cuyo caso evitamos que caiga. También aprovechamos para incluirlo en la plataforma y excluirlo de la anterior
+    for(var i = 0; i < this.platforms.length; i++){
+      if(this.platforms[i].dimension == this.dimension || this.platforms[i].dimension == 0){
+        if(this.colisionPlatform(this.platforms[i]) && !this.blake.jumping){
+          if(this.blakePlatform != this.platforms[i]){
+            this.blakePlatform.excluirBlake();
+            this.blakePlatform = this.platforms[i];
+            this.blakePlatform.incluirBlake(this.blake);
+          }
+          shouldFall = false;
+          break;
+        }
+      }
+    }
+
+    //Si el modo dios está activo, blake nunca se cae
+    if(this.godMode){
+      shouldFall = false;
+    }
+
+    //Si no está sobre ninguna plataforma y no está saltando, blake se cae
+    if(shouldFall && !this.blake.jumping){
+      this.blake.fall();
+    }
+  }
+
   onKeyDown(event){
     var x = event.wich || event.keyCode;
-
-    /*
-    if(x == 17){
-      this.cameraControl.enabled = true;
-      return;
-    }
-    */
 
     var tecla = String.fromCharCode(x);
     
     if(tecla == "X"){
-      if(stats.domElement.style.display == "block"){
-        stats.domElement.style.display = "none";
+      if(!this.debug){
+        stats.domElement.style.display = "block";
+        this.debug = true;
       }
       else{
-        stats.domElement.style.display = "block";
+        stats.domElement.style.display = "none";
+        this.godMode = false;
+        this.activeCamera = this.blakeCamera;
+        this.debug = false;
       }
       return;
     }
-
+  
     if(tecla == "P"){
-      this.cameraControl.enabled = true;
-      this.activeCamera = this.camera2;
+      if(this.debug){
+        this.cameraControl.enabled = true;
+        this.activeCamera = this.debugCamera;
+      }
       return;
     }
 
     if(tecla == "O"){
-      this.cameraControl.enabled = false;
-      this.activeCamera = this.camera;
+      if(this.debug){
+        this.cameraControl.enabled = false;
+        this.activeCamera = this.blakeCamera;
+      }
       return;
     }
 
     if(tecla == "G"){
-      this.godMode = !this.godMode;
+      if(this.debug){
+        this.godMode = !this.godMode;
+      }
+      return;
     }
 
     if(tecla == "Q"){
-      this.switchDimensions(false);
+      if(this.state == SceneStates.PLAYING){
+        this.switchDimensions(false);
+      }
       return;
     }
 
     if(tecla == " "){
-      this.blake.jump();
+      if(this.state == SceneStates.PLAYING){
+        this.blake.jump();
+      }
       return;
     }
 
-    this.blake.move(tecla);
+    if(this.state == SceneStates.PLAYING){
+      this.blake.move(tecla);
+    }
 
   }
 
   onKeyUp(event){
     var x = event.wich || event.keyCode;
 
-    /*
-    if(x == 17){
-      this.cameraControl.enabled = false;
-      return;
-    }
-    */
-
     var tecla = String.fromCharCode(x);
-    this.blake.stop(tecla);
+    if(this.state == SceneStates.PLAYING){
+      this.blake.stop(tecla);
+    }
   }
 }
 
@@ -675,14 +698,13 @@ $(function () {
   window.addEventListener("keydown", (event) => scene.onKeyDown(event));
   window.addEventListener("keyup", (event) => scene.onKeyUp(event));
 
+  //Creación del contador de fps
   stats = new STATS.default();
   stats.setMode(0);
-
   stats.domElement.style.position = 'absolute';
   stats.domElement.style.left = '0';
   stats.domElement.style.top = '0';
   stats.domElement.style.display = "none";
-
   document.body.appendChild(stats.domElement);
 
   // Que no se nos olvide, la primera visualización.
