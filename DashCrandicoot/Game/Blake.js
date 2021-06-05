@@ -3,6 +3,7 @@ import { GLTFLoader } from '../libs/GLTFLoader.js';
 import * as TWEEN from '../libs/tween.esm.js';
 import { Marker } from './Marker.js';
 import { DimensionLight } from './dimensionLight.js';
+import { color } from '../libs/dat.gui.module.js';
 
 const OrientationEnum = Object.freeze({"N":1, "NE":2, "E":3, "SE":4, "S":5, "SW":6, "W":7, "NW":8});
 
@@ -27,15 +28,17 @@ class Blake extends THREE.Object3D{
             that.jumpNode.add(that.rotationNode);
             that.bounceNode = new THREE.Object3D();
             that.bounceNode.add(that.jumpNode);
+            that.finalNode = new THREE.Object3D();
+            that.finalNode.add(that.bounceNode);
             that.cameraNode = new THREE.Object3D();
             that.cameraNode.add(camara);
             // Y las animaciones en el atributo  animations
             var animations = gltf.animations;
             // No olvidarse de colgar el modelo del Object3D de esta instancia de la clase (this)
-            that.add( that.bounceNode);
+            that.add( that.finalNode);
             that.add(that.cameraNode);
             that.createActions(that.model,animations);
-            that.createTweens();
+            that.createTweens(escena);
 
             that.model.traverseVisible(function(unNodo){
                 unNodo.castShadow = true;
@@ -61,6 +64,7 @@ class Blake extends THREE.Object3D{
         this.boucing = false;
         this.falling = false;
         this.idleable = true;
+        this.end = false;
 
         this.marker = new Marker();
         this.add(this.marker);
@@ -71,9 +75,10 @@ class Blake extends THREE.Object3D{
         this.bounceCleanUp = null;
 
         this.speed = 5;
+
     }
 
-    createTweens(){
+    createTweens(escena){
         var that = this;
 
         //#region  Salto  
@@ -232,6 +237,9 @@ class Blake extends THREE.Object3D{
         })
         .onUpdate(function(){
             that.jumpNode.position.y = originFall.y;
+        })
+        .onComplete(function(){
+            escena.die();
         })
         //#endregion
     }
@@ -666,13 +674,15 @@ class Blake extends THREE.Object3D{
 
     update (deltaTime) {
         if(this.model){
-            this.lights.position.y = this.jumpNode.position.y + this.bounceNode.position.y;
-            this.checkAnimation();
             var dt = this.clock.getDelta();
             this.mixer.update (dt);
-            if(this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight){
-                this.setOrientation();
-                this.trasladar(1,deltaTime);
+            if(!this.end){
+                this.lights.position.y = this.jumpNode.position.y + this.bounceNode.position.y;
+                this.checkAnimation();
+                if(this.moveForward || this.moveBackwards || this.moveLeft || this.moveRight){
+                    this.setOrientation();
+                    this.trasladar(1,deltaTime);
+                }
             }
         }
     }
@@ -718,6 +728,52 @@ class Blake extends THREE.Object3D{
         if(!this.falling){
             this.fallAnim.start();
         }
+    }
+
+    createFinalAnimation(actualPosition, endPosition){
+        var origin = {x : 0, z: 0};
+        var destiny = {x: endPosition.x - actualPosition.x, z: endPosition.z - actualPosition.z};
+
+        var that = this;
+
+        var colocacion = new TWEEN.Tween(origin)
+        .to(destiny,1000)
+        .onStart(function(){
+            that.playAnimation('armature|run',true,1);
+            that.end = true;
+        })
+        .onUpdate(function(){
+            that.marker.visible = false;
+            that.lights.visible = false;
+            that.finalNode.position.x = origin.x;
+            that.finalNode.position.z = origin.z;
+        })
+        .onComplete(function(){
+            that.playAnimation('armature|idle',true,1);
+            var degrees = that.computeDegrees(OrientationEnum.S);
+
+            that.model.rotateOnAxis(that.model.up,THREE.MathUtils.degToRad(degrees));
+        })    
+
+        var origin3 = {y:0};
+        var destiny3 = {y : 100};
+
+        var ascenso = new TWEEN.Tween(origin3)
+        .to(destiny3,5000)
+        .easing(TWEEN.Easing.Cubic.In)
+        .onStart(function(){
+            that.playAnimation('armature|jump_ascending',true,1);
+        })
+        .onUpdate(function(){
+            that.finalNode.position.y = origin3.y;
+        })
+        .onComplete(function(){
+            that.visible = false;
+        })
+        .delay(500);
+
+        colocacion.chain(ascenso);
+        colocacion.start();
     }
 }
 

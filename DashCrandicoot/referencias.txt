@@ -8,3 +8,4 @@ Textura Plataformas --> https://es.3dexport.com/free-3dmodel-granite-01-140365.h
 Textura Skybox --> https://learnopengl.com/Advanced-OpenGL/Cubemaps
 Textura Frutas --> http://spanish.fansshare.com/gallery/photos/14095224/free-seamless-textures-seamless-red-apple-texture-texture/?displaying
 Imágen Frutas --> https://www.artstation.com/artwork/WK38R2
+Pantalla de Muerte --> Captura de pantalla del videojuego https://store.steampowered.com/app/570940/DARK_SOULS_REMASTERED/

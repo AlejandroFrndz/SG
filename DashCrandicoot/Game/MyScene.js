@@ -17,7 +17,7 @@ import { Platform } from './Platform.js'
 //Constantes
 const positiveColor = 0x0000FF;
 const negativeColor = 0xFF0000;
-const SceneStates = Object.freeze({"LOADING":1, "STARTING":2, "PLAYING":3, "ENDING":4});
+const SceneStates = Object.freeze({"DEAD":-1, "LOADING":1, "STARTING":2, "PLAYING":3, "ENDING":4});
 
 var stats
 
@@ -49,7 +49,7 @@ class MyScene extends THREE.Scene {
     // Tras crear cada elemento se añadirá a la escena con   this.add(variable)
     
     // Tendremos una cámara con un control de movimiento con el ratón
-    this.createCamera ();
+    this.createCameras ();
 
     //Carga de la textura para el fondo
     var path = "../imgs/textures/skybox/";
@@ -76,7 +76,8 @@ class MyScene extends THREE.Scene {
     //Blake
     this.blake = new Blake(this.blakeCamera,this);
     this.add(this.blake);
-
+    //this.blake.position.set(0,0,-90);
+    //this.godMode = true;
     //Creación de los elementos de la escena, dividos en plataformas
     //Se crean primeramente los vectores para cada tipo de elemento, que son comunes a todas las plataformas
     this.crates = [];
@@ -87,7 +88,7 @@ class MyScene extends THREE.Scene {
     var crate;
     var fruit;
 
-    //#region Plataforma 1. Contiene a Blake al comienzo
+    //#region 1 -- Plataforma 1. Contiene a Blake al comienzo
       //Plataforma
       platform = new Platform(7,5,0);
       this.platforms.push(platform);
@@ -104,6 +105,7 @@ class MyScene extends THREE.Scene {
 
       crate = new Crate(6,-1,negativeColor);
       this.add(crate);
+      crate.position.set(-2,0,0);
       this.crates.push(crate);
       platform.incluir(crate);
 
@@ -121,7 +123,7 @@ class MyScene extends THREE.Scene {
       platform.incluir(fruit);
     //#endregion    
 
-    //#region Plataforma 2
+    //#region 2 -- Plataforma 2
       //Plataforma
       platform = new Platform(7,5,-1,negativeColor);
       this.platforms.push(platform);
@@ -130,7 +132,7 @@ class MyScene extends THREE.Scene {
       platform.crearAnimacion({x : 0, z : 0}, {x : 5, z : 0}, 2000, 1000);
     //#endregion
 
-    //#region InterPlatform 2-3
+    //#region 3 -- InterPlatform 2-3
       //Cajas
       crate = new Crate(10,1,positiveColor);
       this.add(crate);
@@ -168,7 +170,7 @@ class MyScene extends THREE.Scene {
       crate.position.set(7.5,0,-22);
     //#endregion
 
-    //#region Plataforma 3
+    //#region 4 -- Plataforma 3
       //Plataforma
       platform = new Platform(8,8,-1,negativeColor);
       this.platforms.push(platform);
@@ -186,7 +188,7 @@ class MyScene extends THREE.Scene {
       }
     //#endregion
 
-    //#region InterPlatform 3-4
+    //#region 5 -- InterPlatform 3-4
       platform = new Platform(1,1,1,positiveColor);
       platform.posicionar(6,0,-38);
       this.add(platform);
@@ -218,18 +220,12 @@ class MyScene extends THREE.Scene {
       }
     //#endregion
 
-    //#region Plataforma 4
+    //#region 6 -- Plataforma 4
       platform = new Platform(10,10,0);
       platform.posicionar(0,0,-99);
       this.platforms.push(platform);
       this.add(platform);
     //#endregion
-
-    //Pedestal
-    /*
-    this.pedestal = new Pedestal();
-    this.add(this.pedestal);
-      */
 
     //Luces
     this.createLights ();
@@ -295,7 +291,7 @@ class MyScene extends THREE.Scene {
     }
   }
   
-  createCamera () {
+  createCameras() {
     //Camara Principal, solidaria con el desplazamiento de Blake
     this.blakeCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.blakeCamera.position.set(0,5,10);
@@ -311,6 +307,11 @@ class MyScene extends THREE.Scene {
     this.cameraControl = new FlyControls (this.debugCamera, this.renderer.domElement);
     this.clock = new THREE.Clock();
     this.cameraControl.enabled = false;
+
+    //Camara Final. Se usa para la animación de cámara al acabar el nivel
+    this.finalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.finalCamera.position.set(0,3,-90);
+    this.add(this.finalCamera);
 
     //Por defecto empieza activa la cámara de Blake
     this.activeCamera = this.blakeCamera;
@@ -375,9 +376,9 @@ class MyScene extends THREE.Scene {
     //Cilindro colocado sobre el pedestal para simular la luz que rebotarían las particulas en el aire y por tanto harían visible el haz del foco
     var visiblePedestalLight = new THREE.CylinderBufferGeometry(1.5,1.5,100,50,50);
     var mat = new THREE.MeshLambertMaterial({color:0x000000,emissive:0xffffff,emissiveIntensity:1,transparent:true,opacity:0.2});
-    visiblePedestalLight.translate(0,50,-99);
-    var mesh = new THREE.Mesh(visiblePedestalLight,mat);
-    this.add(mesh);
+    this.endCyl = new THREE.Mesh(visiblePedestalLight,mat);
+    this.endCyl.position.set(0,50,-99);
+    this.add(this.endCyl);
   }
   
   createRenderer (myCanvas) {
@@ -416,6 +417,9 @@ class MyScene extends THREE.Scene {
 
     this.debugCamera.aspect = ratio;
     this.debugCamera.updateProjectionMatrix();
+
+    this.finalCamera.aspect = ratio;
+    this.finalCamera.updateProjectionMatrix();
   }
     
   onWindowResize () {
@@ -468,7 +472,18 @@ class MyScene extends THREE.Scene {
       //Colision con las plataformas
       this.checkColisionPlatforms();
       
+      //Colision con el cilindro que marca el final del nivel
+      if(this.colisionEndGame()){
+        if(!this.blake.end){
+          this.blake.createFinalAnimation(this.blakePos, this.objPos);
+          this.activeCamera = this.finalCamera;
+        }
+      }
+
+      this.finalCamera.lookAt(this.blake.model.getWorldPosition());
     }
+
+    
 
     //Se actualizan las animaciones Tween
     TWEEN.update();
@@ -611,6 +626,15 @@ class MyScene extends THREE.Scene {
     }
   }
 
+  colisionEndGame(){
+    this.blake.model.getWorldPosition(this.blakePos);
+    this.endCyl.getWorldPosition(this.objPos);
+    this.objPos.y = 0;
+
+    var distance = this.blakePos.distanceTo(this.objPos);
+    return distance < 1.5;
+  }
+
   onKeyDown(event){
     var x = event.wich || event.keyCode;
 
@@ -680,6 +704,14 @@ class MyScene extends THREE.Scene {
     if(this.state == SceneStates.PLAYING){
       this.blake.stop(tecla);
     }
+  }
+
+  die(){
+    $("#Messages").hide();
+    $("#FruitIcon").hide();
+    $("#deathScreen").fadeIn(3000);
+    $("#restartButton").delay(3000).fadeIn("slow");
+    this.state = SceneStates.DEAD;
   }
 }
 
