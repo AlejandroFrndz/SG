@@ -45,13 +45,7 @@ class MyScene extends THREE.Scene {
     // Lo primero, crear el visualizador, pasándole el lienzo sobre el que realizar los renderizados.
     this.renderer = this.createRenderer(myCanvas);
     
-    // Se crea la interfaz gráfica de usuario
-    this.gui = this.createGUI ();
-        
-    // Todo elemento que se desee sea tenido en cuenta en el renderizado de la escena debe pertenecer a esta. Bien como hijo de la escena (this en esta clase) o como hijo de un elemento que ya esté en la escena.
-    // Tras crear cada elemento se añadirá a la escena con   this.add(variable)
-    
-    // Tendremos una cámara con un control de movimiento con el ratón
+    //Se crean las cámaras que se usaran
     this.createCameras ();
 
     //Carga de la textura para el fondo
@@ -248,6 +242,15 @@ class MyScene extends THREE.Scene {
       this.platforms.push(platform);
       this.add(platform);
     //#endregion
+    
+    //Suelo para el fondo de la cámara orotográfica
+    var groundGeom = new THREE.BoxBufferGeometry(200,0.2,200);
+    var groundMat = new THREE.MeshLambertMaterial({color:0x0288d1 });
+    groundGeom.translate(0,-50,-50);
+
+    this.ground = new THREE.Mesh(groundGeom,groundMat);
+    this.ground.visible = false;
+    this.add(this.ground);
 
     //Luces
     this.createLights ();
@@ -259,7 +262,8 @@ class MyScene extends THREE.Scene {
     //Establecimiento de la dimensión
     this.dimension = -1;
     this.switchDimensions(true);
-
+    
+    //Tiempos para el deltaTime en el desplazamiento de blake
     this.tiempoAnterior = Date.now();
   }
 
@@ -344,31 +348,6 @@ class MyScene extends THREE.Scene {
     this.activeCamera = this.blakeCamera;
   }
   
-  createGUI () {
-    // Se crea la interfaz gráfica de usuario
-    var gui = new GUI();
-    
-    // La escena le va a añadir sus propios controles. 
-    // Se definen mediante una   new function()
-    // En este caso la intensidad de la luz y si se muestran o no los ejes
-    this.guiControls = new function() {
-      // En el contexto de una función   this   alude a la función
-      this.lightIntensity = 0.5;
-      this.axisOnOff = true;
-    }
-
-    // Se crea una sección para los controles de esta clase
-    var folder = gui.addFolder ('Luz y Ejes');
-    
-    // Se le añade un control para la intensidad de la luz
-    folder.add (this.guiControls, 'lightIntensity', 0, 1, 0.1).name('Intensidad de la Luz : ');
-    
-    // Y otro para mostrar u ocultar los ejes
-    folder.add (this.guiControls, 'axisOnOff').name ('Mostrar ejes : ');
-    
-    return gui;
-  }
-  
   createLights () {
     //Luz Ambiental
     var ambientLight = new THREE.AmbientLight(0xccddee, 0.20);
@@ -415,7 +394,7 @@ class MyScene extends THREE.Scene {
     var renderer = new THREE.WebGLRenderer();
     
     // Se establece un color de fondo en las imágenes que genera el render
-    renderer.setClearColor(new THREE.Color(0xEEEEEE), 1.0);
+    renderer.setClearColor(new THREE.Color(0x000000), 1.0);
     
     // Se establece el tamaño, se aprovecha la totalidad de la ventana del navegador
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -428,12 +407,6 @@ class MyScene extends THREE.Scene {
     renderer.shadowMap.type = THREE.PCFShadowMap;
 
     return renderer;  
-  }
-  
-  getCamera () {
-    // En principio se devuelve la única cámara que tenemos
-    // Si hubiera varias cámaras, este método decidiría qué cámara devuelve cada vez que es consultado
-    return this.activeCamera;
   }
   
   setCameraAspect (ratio) {
@@ -473,10 +446,7 @@ class MyScene extends THREE.Scene {
     requestAnimationFrame(() => this.update())
     
     // Le decimos al renderizador "visualiza la escena que te indico usando la cámara que te estoy pasando"
-    this.renderer.render (this, this.getCamera());
-    
-    // Se muestran o no los ejes según lo que idique la GUI
-    this.axis.visible = this.guiControls.axisOnOff;
+    this.renderer.render (this, this.activeCamera);
     
     if(this.state == SceneStates.STARTING){
       //Animación de la camara
@@ -689,21 +659,31 @@ class MyScene extends THREE.Scene {
   
     if(tecla == "P"){
       if(this.debug){
-        this.cameraControl.enabled = true;
-        this.activeCamera = this.debugCamera;
+        if(this.activeCamera == this.debugCamera){
+          this.cameraControl.enabled = false;
+          this.activeCamera = this.blakeCamera;
+          this.ground.visible = false;
+        }
+        else{
+          this.cameraControl.enabled = true;
+          this.activeCamera = this.debugCamera;
+          this.ground.visible = false;
+        }
       }
       return;
     }
 
-    if(tecla == "B"){
-      this.cameraControl.enabled = false;
-      this.activeCamera = this.blakeCamera;
-      return;
-    }
-
     if(tecla == "O"){
-      this.cameraControl.enabled = false;
-      this.activeCamera = this.orthographicCamera;
+      if(this.activeCamera == this.orthographicCamera){
+        this.cameraControl.enabled = false;
+        this.activeCamera = this.blakeCamera;
+        this.ground.visible = false;
+      }
+      else{
+        this.cameraControl.enabled = false;
+        this.activeCamera = this.orthographicCamera;
+        this.ground.visible = true;
+      }
       return;
     }
 
