@@ -18,6 +18,8 @@ import { Platform } from './Platform.js'
 const positiveColor = 0x0000FF;
 const negativeColor = 0xFF0000;
 const SceneStates = Object.freeze({"DEAD":-1, "LOADING":1, "STARTING":2, "PLAYING":3, "ENDING":4});
+const maxCrates = 10;
+const maxFruits = 130;
 
 var stats
 
@@ -30,6 +32,7 @@ class MyScene extends THREE.Scene {
   // Recibe el  div  que se ha creado en el  html  que va a ser el lienzo en el que mostrar
   // la visualización de la escena
   static fruitCount = 0;
+  static crateCount = 0;
 
   constructor (myCanvas) { 
     super();
@@ -76,8 +79,12 @@ class MyScene extends THREE.Scene {
     //Blake
     this.blake = new Blake(this.blakeCamera,this);
     this.add(this.blake);
-    //this.blake.position.set(0,0,-90);
-    //this.godMode = true;
+
+    //Trasladarlo al final para ir probando las cosas de terminar
+    // this.blake.position.set(0,0,-90);
+    // this.godMode = true;
+
+
     //Creación de los elementos de la escena, dividos en plataformas
     //Se crean primeramente los vectores para cada tipo de elemento, que son comunes a todas las plataformas
     this.crates = [];
@@ -194,10 +201,25 @@ class MyScene extends THREE.Scene {
       this.add(platform);
       this.platforms.push(platform);
 
+      crate = new Crate(10,-1,negativeColor);
+      crate.position.set(8,0,-39);
+      this.crates.push(crate);
+      this.add(crate);
+
       platform = new Platform(1,1,-1,negativeColor);
       platform.posicionar(0,0,-40);
       this.add(platform);
       this.platforms.push(platform);
+
+      crate = new Crate(10,1,positiveColor);
+      crate.position.set(4,0,-40);
+      this.crates.push(crate);
+      this.add(crate);
+
+      crate = new Crate(10,-1,negativeColor);
+      crate.position.set(-4,0,-40);
+      this.crates.push(crate);
+      this.add(crate);
 
       platform = new Platform(10,8,-1,negativeColor);
       platform.posicionar(0,0,-50);
@@ -313,6 +335,11 @@ class MyScene extends THREE.Scene {
     this.finalCamera.position.set(0,3,-90);
     this.add(this.finalCamera);
 
+    //Camara Ortogonal.
+    this.orthographicCamera = new THREE.OrthographicCamera(-60,60,60,-60,0.1,1000);
+    this.orthographicCamera.position.set(0,10,-50);
+    this.orthographicCamera.lookAt(new THREE.Vector3(0,0,-50));
+
     //Por defecto empieza activa la cámara de Blake
     this.activeCamera = this.blakeCamera;
   }
@@ -420,6 +447,12 @@ class MyScene extends THREE.Scene {
 
     this.finalCamera.aspect = ratio;
     this.finalCamera.updateProjectionMatrix();
+
+    var altoVista = this.orthographicCamera.top - this.orthographicCamera.bottom;
+    var centroAncho = (this.orthographicCamera.left + this.orthographicCamera.right)/2;
+    this.orthographicCamera.left = centroAncho - altoVista*ratio/2;
+    this.orthographicCamera.right = centroAncho + altoVista*ratio/2;
+    this.orthographicCamera.updateProjectionMatrix();
   }
     
   onWindowResize () {
@@ -475,12 +508,12 @@ class MyScene extends THREE.Scene {
       //Colision con el cilindro que marca el final del nivel
       if(this.colisionEndGame()){
         if(!this.blake.end){
-          this.blake.createFinalAnimation(this.blakePos, this.objPos);
+          this.blake.createFinalAnimation(this.blakePos, this.objPos, this);
           this.activeCamera = this.finalCamera;
         }
       }
 
-      this.finalCamera.lookAt(this.blake.model.getWorldPosition());
+      this.finalCamera.lookAt(this.blake.model.getWorldPosition(this.blakePos));
     }
 
     
@@ -579,7 +612,6 @@ class MyScene extends THREE.Scene {
         if(this.colisionFruit(this.fruits[i])){
           this.fruits[i].pickUp();
           this.fruits[i] = null;
-          this.fruitCount++;
           break;
         }
       }
@@ -649,6 +681,7 @@ class MyScene extends THREE.Scene {
         stats.domElement.style.display = "none";
         this.godMode = false;
         this.activeCamera = this.blakeCamera;
+        this.cameraControl.enabled = false;
         this.debug = false;
       }
       return;
@@ -662,11 +695,15 @@ class MyScene extends THREE.Scene {
       return;
     }
 
+    if(tecla == "B"){
+      this.cameraControl.enabled = false;
+      this.activeCamera = this.blakeCamera;
+      return;
+    }
+
     if(tecla == "O"){
-      if(this.debug){
-        this.cameraControl.enabled = false;
-        this.activeCamera = this.blakeCamera;
-      }
+      this.cameraControl.enabled = false;
+      this.activeCamera = this.orthographicCamera;
       return;
     }
 
@@ -712,6 +749,17 @@ class MyScene extends THREE.Scene {
     $("#deathScreen").fadeIn(3000);
     $("#restartButton").delay(3000).fadeIn("slow");
     this.state = SceneStates.DEAD;
+  }
+
+  end(){
+    $("#Messages").hide();
+    $("#FruitIcon").hide();
+    $("#gracias").fadeIn(3000);
+    $("#finalFruitIcon").delay(2000).fadeIn(3000);
+    $("#recuentoFrutas").html(MyScene.fruitCount + " / " + maxFruits).delay(2000).fadeIn(3000);
+    $("#finalCrateIcon").delay(2000).fadeIn(3000);
+    $("#recuentoCajas").html(MyScene.crateCount + " / " + maxCrates).delay(2000).fadeIn(3000);
+    this.state = SceneStates.ENDING;
   }
 }
 

@@ -91,6 +91,7 @@ class Crate extends THREE.Object3D{
           that.add(that.fruit);
           that.fruit.pickUp();
           MyScene.fruitCount += (that.nFruits - 1);
+          MyScene.crateCount++;
         })
         .onUpdate(function(){
           that.faceTop.position.y = origin.top;

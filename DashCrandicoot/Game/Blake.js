@@ -3,7 +3,6 @@ import { GLTFLoader } from '../libs/GLTFLoader.js';
 import * as TWEEN from '../libs/tween.esm.js';
 import { Marker } from './Marker.js';
 import { DimensionLight } from './dimensionLight.js';
-import { color } from '../libs/dat.gui.module.js';
 
 const OrientationEnum = Object.freeze({"N":1, "NE":2, "E":3, "SE":4, "S":5, "SW":6, "W":7, "NW":8});
 
@@ -22,10 +21,8 @@ class Blake extends THREE.Object3D{
             that.model.scale.y = 0.009;
             that.model.scale.z = 0.009;
             that.model.rotation.y = Math.PI;
-            that.rotationNode = new THREE.Object3D();
-            that.rotationNode.add(that.model);
             that.jumpNode = new THREE.Object3D();
-            that.jumpNode.add(that.rotationNode);
+            that.jumpNode.add(that.model);
             that.bounceNode = new THREE.Object3D();
             that.bounceNode.add(that.jumpNode);
             that.finalNode = new THREE.Object3D();
@@ -730,7 +727,7 @@ class Blake extends THREE.Object3D{
         }
     }
 
-    createFinalAnimation(actualPosition, endPosition){
+    createFinalAnimation(actualPosition, endPosition, escena){
         var origin = {x : 0, z: 0};
         var destiny = {x: endPosition.x - actualPosition.x, z: endPosition.z - actualPosition.z};
 
@@ -769,6 +766,7 @@ class Blake extends THREE.Object3D{
         })
         .onComplete(function(){
             that.visible = false;
+            escena.end();
         })
         .delay(500);
 
