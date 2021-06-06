@@ -17,7 +17,7 @@ import { Platform } from './Platform.js'
 //Constantes
 const positiveColor = 0x0000FF;
 const negativeColor = 0xFF0000;
-const SceneStates = Object.freeze({"DEAD":-1, "LOADING":1, "STARTING":2, "PLAYING":3, "ENDING":4});
+const SceneStates = Object.freeze({"DEAD":-1, "LOADING":1, "PLAYING":2, "ENDING":3});
 const maxCrates = 10;
 const maxFruits = 130;
 
@@ -244,8 +244,9 @@ class MyScene extends THREE.Scene {
     //#endregion
     
     //Suelo para el fondo de la cámara orotográfica
+    var groundTexture = new THREE.TextureLoader().load('../imgs/textures/ground.png');
     var groundGeom = new THREE.BoxBufferGeometry(200,0.2,200);
-    var groundMat = new THREE.MeshLambertMaterial({color:0x0288d1 });
+    var groundMat = new THREE.MeshLambertMaterial({map:groundTexture });
     groundGeom.translate(0,-50,-50);
 
     this.ground = new THREE.Mesh(groundGeom,groundMat);
@@ -447,11 +448,6 @@ class MyScene extends THREE.Scene {
     
     // Le decimos al renderizador "visualiza la escena que te indico usando la cámara que te estoy pasando"
     this.renderer.render (this, this.activeCamera);
-    
-    if(this.state == SceneStates.STARTING){
-      //Animación de la camara
-      this.state = SceneStates.PLAYING;
-    }
 
     // Se actualiza la posición de la cámara según su controlador
     this.cameraControl.update(this.clock.getDelta());
@@ -650,68 +646,68 @@ class MyScene extends THREE.Scene {
       else{
         stats.domElement.style.display = "none";
         this.godMode = false;
-        this.activeCamera = this.blakeCamera;
+        if(this.state == SceneStates.ENDING){
+          this.activeCamera = this.finalCamera;
+        }
+        else{
+          this.activeCamera = this.blakeCamera;
+        }
         this.cameraControl.enabled = false;
         this.debug = false;
       }
       return;
     }
-  
-    if(tecla == "P"){
-      if(this.debug){
-        if(this.activeCamera == this.debugCamera){
+    
+    if(this.state = SceneStates.PLAYING){
+      if(tecla == "P"){
+        if(this.debug){
+          if(this.activeCamera == this.debugCamera){
+            this.cameraControl.enabled = false;
+            this.activeCamera = this.blakeCamera;
+            this.ground.visible = false;
+          }
+          else{
+            this.cameraControl.enabled = true;
+            this.activeCamera = this.debugCamera;
+            this.ground.visible = false;
+          }
+        }
+        return;
+      }
+
+      if(tecla == "O"){
+        if(this.activeCamera == this.orthographicCamera){
           this.cameraControl.enabled = false;
           this.activeCamera = this.blakeCamera;
           this.ground.visible = false;
         }
         else{
-          this.cameraControl.enabled = true;
-          this.activeCamera = this.debugCamera;
-          this.ground.visible = false;
+          this.cameraControl.enabled = false;
+          this.activeCamera = this.orthographicCamera;
+          this.ground.visible = true;
         }
+        return;
       }
-      return;
-    }
 
-    if(tecla == "O"){
-      if(this.activeCamera == this.orthographicCamera){
-        this.cameraControl.enabled = false;
-        this.activeCamera = this.blakeCamera;
-        this.ground.visible = false;
+      if(tecla == "G"){
+        if(this.debug){
+          this.godMode = !this.godMode;
+        }
+        return;
       }
-      else{
-        this.cameraControl.enabled = false;
-        this.activeCamera = this.orthographicCamera;
-        this.ground.visible = true;
-      }
-      return;
-    }
-
-    if(tecla == "G"){
-      if(this.debug){
-        this.godMode = !this.godMode;
-      }
-      return;
-    }
-
-    if(tecla == "Q"){
-      if(this.state == SceneStates.PLAYING){
+  
+      if(tecla == "Q"){
         this.switchDimensions(false);
+        return;
       }
-      return;
-    }
-
-    if(tecla == " "){
-      if(this.state == SceneStates.PLAYING){
+  
+      if(tecla == " "){
         this.blake.jump();
+        return;
       }
-      return;
-    }
-
-    if(this.state == SceneStates.PLAYING){
+  
       this.blake.move(tecla);
     }
-
   }
 
   onKeyUp(event){
