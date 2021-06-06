@@ -2,7 +2,6 @@
 // Clases de la biblioteca
 
 import * as THREE from '../libs/three.module.js'
-import { GUI } from '../libs/dat.gui.module.js'
 import { FlyControls } from '../libs/FlyControls.js';
 import * as TWEEN from '../libs/tween.esm.js'
 import * as STATS from '../libs/stats.module.js'
@@ -735,6 +734,7 @@ class MyScene extends THREE.Scene {
     $("#recuentoFrutas").html(MyScene.fruitCount + " / " + maxFruits).delay(2000).fadeIn(3000);
     $("#finalCrateIcon").delay(2000).fadeIn(3000);
     $("#recuentoCajas").html(MyScene.crateCount + " / " + maxCrates).delay(2000).fadeIn(3000);
+    $("#botonFinal").delay(5000).fadeIn(2000);
     this.state = SceneStates.ENDING;
   }
 }
