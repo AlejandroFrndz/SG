@@ -50,13 +50,16 @@
         </style>
     </head>
     <body>
+        <!-- Pantalla de carga -->
+        <img src="../imgs/loading.gif" style="z-index: 10; width: 100%;" id="loadingScreen"/>
+
         <!-- Pantalla de muerte y botón de reintentar que se muestra cuando se cae -->
         <img src="../imgs/death.png" style="width: 100%; z-index: 10; display: none;" id="deathScreen"/>
         <button type="button" onclick="window.location.reload()" class="button" id="restartButton">Try Again</button>
 
         <!-- Contador de frutas que se muestra mientras se juega -->
-        <div style="position: absolute; left:150px; top:10px; font-size: 5em; color:white" id="Messages"></div>
-        <img src="../imgs/apple.png" style="position: absolute; ;left:30px; top:10px; width: 100px;" id="FruitIcon"></img>
+        <div style="position: absolute; left:150px; top:10px; font-size: 5em; color:white; display: none;" id="Messages"></div>
+        <img src="../imgs/apple.png" style="position: absolute; ;left:30px; top:10px; width: 100px; display: none;" id="FruitIcon"></img>
 
         <!-- Mensajes de final del juego -->
         <div class="finalMessage" style="position: absolute; left: 42%; top: 30%; display: none;" id="gracias">Thanks for playing!</div>

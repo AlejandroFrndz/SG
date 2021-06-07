@@ -14,12 +14,16 @@ import { Fruit } from './Fruit.js'
 import { Platform } from './Platform.js'
 
 //Constantes
+//Colores de las 2 dimensiones de los objetos
 const positiveColor = 0x0000FF;
 const negativeColor = 0xFF0000;
+//Estados de la escena
 const SceneStates = Object.freeze({"DEAD":-1, "LOADING":1, "PLAYING":2, "ENDING":3});
+//Número total de cajas y frutas de la escena, para mostrarlo en la pantalla final
 const maxCrates = 10;
 const maxFruits = 130;
 
+//Variable para el contador de fps
 var stats
 
 /// La clase fachada del modelo
@@ -28,16 +32,17 @@ var stats
  */
 
 class MyScene extends THREE.Scene {
-  // Recibe el  div  que se ha creado en el  html  que va a ser el lienzo en el que mostrar
-  // la visualización de la escena
+  //Contadores para el recuente de frutas recogidas y cajas destruidas
   static fruitCount = 0;
   static crateCount = 0;
 
+  //Recibe el div que se ha creado en el html que va a ser el lienzo en el que mostrar la visualización de la escena
   constructor (myCanvas) { 
     super();
 
-    //Establecemos el estado de la escena
+    //Establecemos el estado de la escena como cargando
     this.state = SceneStates.LOADING;
+    //Al comenzar, el modo dios y debug están desactivados
     this.godMode = false;
     this.debug = false;
     
@@ -61,7 +66,9 @@ class MyScene extends THREE.Scene {
     this.background = cubeMap;
     
     // Y unos ejes. Imprescindibles para orientarnos sobre dónde están las cosas
+    //En principio están ocultos, se mostrarán si activamos el modo debug
     this.axis = new THREE.AxesHelper (5);
+    this.axis.visible = false;
     this.add (this.axis);
     
     //UI que incluye el contador de frutas recogidas
@@ -73,17 +80,13 @@ class MyScene extends THREE.Scene {
     this.blake = new Blake(this.blakeCamera,this);
     this.add(this.blake);
 
-    //Trasladarlo al final para ir probando las cosas de terminar
-    // this.blake.position.set(0,0,-90);
-    // this.godMode = true;
-
-
     //Creación de los elementos de la escena, dividos en plataformas
     //Se crean primeramente los vectores para cada tipo de elemento, que son comunes a todas las plataformas
     this.crates = [];
     this.fruits = [];
     this.platforms = [];
 
+    //Variables para almacenar temporalmente los elementos que se van creando
     var platform;
     var crate;
     var fruit;
@@ -108,19 +111,6 @@ class MyScene extends THREE.Scene {
       crate.position.set(-2,0,0);
       this.crates.push(crate);
       platform.incluir(crate);
-
-      //Frutas
-      fruit = new Fruit();
-      this.add(fruit);
-      fruit.position.set(2,0,-2);
-      this.fruits.push(fruit);
-      platform.incluir(fruit);
-
-      fruit = new Fruit();
-      this.add(fruit);
-      this.fruits.push(fruit);
-      fruit.position.set(-2,0,-2);
-      platform.incluir(fruit);
     //#endregion    
 
     //#region 2 -- Plataforma 2
@@ -130,6 +120,19 @@ class MyScene extends THREE.Scene {
       platform.posicionar(4,0,-6);
       this.add(platform);
       platform.crearAnimacion({x : 0, z : 0}, {x : 5, z : 0}, 2000, 1000);
+
+      //Frutas
+      fruit = new Fruit();
+      this.add(fruit);
+      fruit.position.set(6,0,-6);
+      this.fruits.push(fruit);
+      platform.incluir(fruit);
+
+      fruit = new Fruit();
+      this.add(fruit);
+      this.fruits.push(fruit);
+      fruit.position.set(2,0,-6);
+      platform.incluir(fruit);
     //#endregion
 
     //#region 3 -- InterPlatform 2-3
@@ -242,14 +245,14 @@ class MyScene extends THREE.Scene {
       this.add(platform);
     //#endregion
     
-    //Suelo para el fondo de la cámara orotográfica
+    //Con la cámara ortográfica no se muestra el cubeMap de fondo de la escena
+    //Por tanto, uso un suelo texturizado que se coloca debajo del nivel para simular el fondo con esta cámara
     var groundTexture = new THREE.TextureLoader().load('../imgs/textures/ground.png');
     var groundGeom = new THREE.BoxBufferGeometry(200,0.2,200);
     var groundMat = new THREE.MeshLambertMaterial({map:groundTexture });
     groundGeom.translate(0,-50,-50);
-
     this.ground = new THREE.Mesh(groundGeom,groundMat);
-    this.ground.visible = false;
+    this.ground.visible = false;  //En principio está oculto, y solo se muestra cuando se activa la cámara ortográfica
     this.add(this.ground);
 
     //Luces
@@ -267,11 +270,17 @@ class MyScene extends THREE.Scene {
     this.tiempoAnterior = Date.now();
   }
 
+  //Función para el cambio de dimensión cuando el usuario pulsa la Q
+  //Puesto que la escena llama a la función una primera vez durante su creación, el booleano indica si es la primera vez en cuyo caso se salta las comprobaciones
   switchDimensions(firstTime){
+    //Se establece temporalmente la dimension a la que cambiar en una variable auxiliar, pues todavia no sabemos si el cambio se podrá efectuar
     var dimension = this.dimension * -1;
     var cambiar = true;
 
+    //Si es la primera vez que se llama se omiten las comprobaciones
     if(!firstTime){
+      //Si no, se comprueba que Blake no esté colisionando con ningún objeto (caja o plataforma) de la dimensión destino
+      //Si está colisionando no se permite el cambio de dimensión pues de lo contrario quedaría atrapado dentro del objeto
       for(var i = 0; i < this.crates.length && cambiar; i++){
         if(this.crates[i] != null){
           if(this.crates[i].dimension == dimension){
@@ -291,7 +300,9 @@ class MyScene extends THREE.Scene {
       }
     }
 
+    //Si se pasan las comprobaciones, se efectúa el cambio
     if(cambiar){
+      //para cada objeto de la nueva dimensión se desactiva el modo alambre y para los de la antigua se activa
       for(var i = 0; i < this.crates.length; i++){
         if(this.crates[i] != null){
           if(this.crates[i].dimension == dimension){
@@ -312,13 +323,16 @@ class MyScene extends THREE.Scene {
         }
       }
       
+      //También se cambian las luces de dimensión que acompañan a Blake
       this.blake.lights.switchDimensions(dimension);
+      //Y se formaliza el cambio
       this.dimension = dimension;
     }
   }
   
+  //Función que crea las 4 cámaras a usar en la escena
   createCameras() {
-    //Camara Principal, solidaria con el desplazamiento de Blake
+    //Camara Principal, solidaria con el desplazamiento de Blake y activa por defecto
     this.blakeCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.blakeCamera.position.set(0,5,10);
     var look = new THREE.Vector3 (0,0,0);
@@ -339,7 +353,7 @@ class MyScene extends THREE.Scene {
     this.finalCamera.position.set(0,3,-90);
     this.add(this.finalCamera);
 
-    //Camara Ortogonal.
+    //Camara Ortogonal. Proporciona una vista en planta superior del esecnario completo
     this.orthographicCamera = new THREE.OrthographicCamera(-60,60,60,-60,0.1,1000);
     this.orthographicCamera.position.set(0,10,-50);
     this.orthographicCamera.lookAt(new THREE.Vector3(0,0,-50));
@@ -348,8 +362,9 @@ class MyScene extends THREE.Scene {
     this.activeCamera = this.blakeCamera;
   }
   
+  //Crea las luces a usar en la escena (menos las posicionales de dimensión de Blake, las cuales crea él mismo en su constructor)
   createLights () {
-    //Luz Ambiental
+    //Luz Ambiental. Necesaria para que no se vean totalmente negras las partes sin luz directa. De baja intensidad para no saturar la escena
     var ambientLight = new THREE.AmbientLight(0xccddee, 0.20);
     this.add (ambientLight);
 
@@ -358,10 +373,11 @@ class MyScene extends THREE.Scene {
     this.sun.position.set(100,110,-150);    
     this.add(this.sun);
 
-    //Sombras de la luz direccional
+    //Configuración de las sombras de la luz direccional
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.width = 2048;
     this.sun.shadow.mapSize.height = 2048;
+    //Es necesario especificar el fustrum de la cámra pues las luces direccionales usan una cámara ortogonal que no toma el fov automáticamente
     this.sun.shadow.camera.left = -70;
     this.sun.shadow.camera.bottom = -70;
     this.sun.shadow.camera.right = 70;
@@ -369,32 +385,38 @@ class MyScene extends THREE.Scene {
     this.sun.shadow.camera.near = 0.5;
     this.sun.shadow.camera.far = 500;
 
-    //Luz para el pedestal donde termina el nivel
-    this.pedestalLight = new THREE.SpotLight(0xffffff,1,6,Math.PI/11,0,0);
-    this.pedestalLight.position.set(0,5,-99);
+    //Luz focal para el final del nivel
+    this.finalLight = new THREE.SpotLight(0xffffff,1,6,Math.PI/11,0,0);
+    //Se establece su posición y se le proporciona un target con la dirección a la que apuntar el haz de luz
+    this.finalLight.position.set(0,5,-99);
     var target = new THREE.Object3D();
     target.position.set(0,0,-99);
+    //El target debe ser añadido a la escena
     this.add(target);
-    this.pedestalLight.target = target;
-    this.add(this.pedestalLight);
-    //Configuración de las sombras
-    this.pedestalLight.castShadow = true;
-    //Cilindro colocado sobre el pedestal para simular la luz que rebotarían las particulas en el aire y por tanto harían visible el haz del foco
-    var visiblePedestalLight = new THREE.CylinderBufferGeometry(1.5,1.5,100,50,50);
+    //Si no se le diese target, apuntaría por defecto al (0,0,0)
+    this.finalLight.target = target;
+    this.add(this.finalLight);
+    //Configuración de las sombras para la luz focal. Solo hay que indicar que es proyectora de sombras y el fov de la cámara se cálcula automáticamente
+    this.finalLight.castShadow = true;
+
+    //Cilindro blanco de baja opacidad colocado en el lugar de la luz focal final
+    //Sirve para simular la luz que proyectada por el foco rebotaría en las particulas en suspensión en el aire y por tanto haría visible el haz
+    var visiblefinalLight = new THREE.CylinderBufferGeometry(1.5,1.5,100,50,50);
+    //Usamos un material de Lambert pues no queremos brillos, nos interesa un color emisivo mate
     var mat = new THREE.MeshLambertMaterial({color:0x000000,emissive:0xffffff,emissiveIntensity:1,transparent:true,opacity:0.2});
-    this.endCyl = new THREE.Mesh(visiblePedestalLight,mat);
+    this.endCyl = new THREE.Mesh(visiblefinalLight,mat);
     this.endCyl.position.set(0,50,-99);
     this.add(this.endCyl);
   }
   
+  //Crea el renderer que se encargará de realizar la visualización de la escena
+  // Se recibe el lienzo sobre el que se van a hacer los renderizados. Un div definido en el html.
   createRenderer (myCanvas) {
-    // Se recibe el lienzo sobre el que se van a hacer los renderizados. Un div definido en el html.
-    
     // Se instancia un Renderer   WebGL
     var renderer = new THREE.WebGLRenderer();
     
     // Se establece un color de fondo en las imágenes que genera el render
-    renderer.setClearColor(new THREE.Color(0x000000), 1.0);
+    renderer.setClearColor(new THREE.Color(0xEEEEEE), 1.0);
     
     // Se establece el tamaño, se aprovecha la totalidad de la ventana del navegador
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -402,13 +424,14 @@ class MyScene extends THREE.Scene {
     // La visualización se muestra en el lienzo recibido
     $(myCanvas).append(renderer.domElement);
     
-    //Se configura la proyección de sombras
+    //Se configura la proyección de sombras. Para ello, simplemente se activa la simulación y se le indica el filtro de suavizado a aplicar
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
 
     return renderer;  
   }
   
+  //Actualización del ratio de aspecto de las cámaras
   setCameraAspect (ratio) {
     // Cada vez que el usuario modifica el tamaño de la ventana desde el gestor de ventanas de
     // su sistema operativo hay que actualizar el ratio de aspecto de las cámaras
@@ -421,13 +444,15 @@ class MyScene extends THREE.Scene {
     this.finalCamera.aspect = ratio;
     this.finalCamera.updateProjectionMatrix();
 
+    //La cámara ortográfica requiere algo más de cálculo
     var altoVista = this.orthographicCamera.top - this.orthographicCamera.bottom;
     var centroAncho = (this.orthographicCamera.left + this.orthographicCamera.right)/2;
     this.orthographicCamera.left = centroAncho - altoVista*ratio/2;
     this.orthographicCamera.right = centroAncho + altoVista*ratio/2;
     this.orthographicCamera.updateProjectionMatrix();
   }
-    
+  
+  //Event listener para la modificación del tamaño de la ventana
   onWindowResize () {
     // Este método es llamado cada vez que el usuario modifica el tamapo de la ventana de la aplicación
     // Hay que actualizar el ratio de aspecto de la cámara
@@ -437,8 +462,10 @@ class MyScene extends THREE.Scene {
     this.renderer.setSize (window.innerWidth, window.innerHeight);
   }
 
+  //Llamado cada vez que se va a visualizar la escena
   update () {
     // Este método debe ser llamado cada vez que queramos visualizar la escena de nuevo.
+    //Se establece el tiempo elapsado entre la generación de este frame y el anterior
     var tiempoActual = Date.now();
     var deltaTime = (tiempoActual-this.tiempoAnterior)/1000;
     // Literalmente le decimos al navegador: "La próxima vez que haya que refrescar la pantalla, llama al método que te indico".
@@ -451,6 +478,7 @@ class MyScene extends THREE.Scene {
     // Se actualiza la posición de la cámara según su controlador
     this.cameraControl.update(this.clock.getDelta());
 
+    //Si la escena se está jugando
     if(this.state == SceneStates.PLAYING){
 
       //Se actualiza blake
@@ -472,16 +500,16 @@ class MyScene extends THREE.Scene {
       
       //Colision con el cilindro que marca el final del nivel
       if(this.colisionEndGame()){
+        //Si se colisiona y no se ha empezado la animación final, se crean
         if(!this.blake.end){
           this.blake.createFinalAnimation(this.blakePos, this.objPos, this);
           this.activeCamera = this.finalCamera;
         }
       }
 
+      //La cámara final debe apuntar a Blake para realizar la animación de esta cámara cuando Blake asciende
       this.finalCamera.lookAt(this.blake.model.getWorldPosition(this.blakePos));
     }
-
-    
 
     //Se actualizan las animaciones Tween
     TWEEN.update();
@@ -548,12 +576,12 @@ class MyScene extends THREE.Scene {
 
   //Comprueba la colisión del marcador con todas las cajas de la escena que estén en la dimensión actual. Si hay colisión coloca el marcador encima
   checkMarkerColisionCrates(){
-    this.blake.marker.position.y = 0.001;
+    this.blake.marker.position.y = 0.001; //Por defecto el marcador se sitúa en el suelo
     for(var i = 0; i < this.crates.length; i++){
       if(this.crates[i] != null){
         if(this.crates[i].dimension == this.dimension || this.crates[i].dimension == 0){
           if(this.markerColisionCrate(this.crates[i])){
-            this.blake.marker.position.y = 1.005;
+            this.blake.marker.position.y = 1.005; //Y si colisiona con una caja, se pone encima de dicha caja
             break;
           }
         }
@@ -623,6 +651,7 @@ class MyScene extends THREE.Scene {
     }
   }
 
+  //Función para detectar la colision de blake con el cilindro que marca el final del nivel
   colisionEndGame(){
     this.blake.model.getWorldPosition(this.blakePos);
     this.endCyl.getWorldPosition(this.objPos);
@@ -632,32 +661,43 @@ class MyScene extends THREE.Scene {
     return distance < 1.5;
   }
 
+  //Event Listener para las pulsaciones de telcas
   onKeyDown(event){
+    //Primero se decodifica la tecla pulsada
     var x = event.wich || event.keyCode;
-
     var tecla = String.fromCharCode(x);
     
+    //Y después ejectuan unas u otras acciones en función de la tecla concreta
+    //La X activa o desactiva el modo debug
     if(tecla == "X"){
+      //Si lo activa muestra el contador de fps y los ejes. También se activa el flag correspondiente
       if(!this.debug){
         stats.domElement.style.display = "block";
         this.debug = true;
+        this.axis.visible = true;
       }
       else{
+        //Si por el contrario lo desactiva, se ocultan los fps y ejes y se desactiva el modo dios (si estaba activo)
         stats.domElement.style.display = "none";
         this.godMode = false;
+        //También se reactiva la cámara, final o de blake.
         if(this.state == SceneStates.ENDING){
           this.activeCamera = this.finalCamera;
         }
         else{
           this.activeCamera = this.blakeCamera;
         }
+        //Se desactiva el control de la cámara debug y el flag
         this.cameraControl.enabled = false;
         this.debug = false;
+        this.axis.visible = false;
       }
       return;
     }
     
+    //Todas estas funciones solo están disponibles si se está jugando.
     if(this.state = SceneStates.PLAYING){
+      //La tecla P activa o desactiva la cámara debug, solo si el modo debug está activo
       if(tecla == "P"){
         if(this.debug){
           if(this.activeCamera == this.debugCamera){
@@ -674,6 +714,7 @@ class MyScene extends THREE.Scene {
         return;
       }
 
+      //La tecla O activa o desactiva la cámara ortográfica
       if(tecla == "O"){
         if(this.activeCamera == this.orthographicCamera){
           this.cameraControl.enabled = false;
@@ -688,36 +729,54 @@ class MyScene extends THREE.Scene {
         return;
       }
 
+      //La tecla G activa/desactiva el modo dios, solo si se está en modo debug
       if(tecla == "G"){
         if(this.debug){
           this.godMode = !this.godMode;
         }
         return;
       }
-  
+      
+      //Con la tecla Q se cambia (o al menos intenta) la dimensión
       if(tecla == "Q"){
-        this.switchDimensions(false);
+        this.switchDimensions(false); //Puesto que no es la primera vez, el parámetro está a false y se ejecutarán las comprobaciones
         return;
       }
-  
+      
+      //Con el espacio se salta
       if(tecla == " "){
         this.blake.jump();
         return;
       }
-  
+      
+      //Finalmente, si no es ninguna de las teclas anteriores se comprueba si es alguna de movimiento, responsabilidad que recae sobre el propio Blake
       this.blake.move(tecla);
     }
   }
 
+  //Listener para soltar una tecla
   onKeyUp(event){
+    //De nuevo, primero se decodifica la tecla
     var x = event.wich || event.keyCode;
-
     var tecla = String.fromCharCode(x);
+
+    //Y después solo nos interesa si se trata de una tecla de movimiento y solo si se está jugando
     if(this.state == SceneStates.PLAYING){
       this.blake.stop(tecla);
     }
   }
 
+  //Función para ocultar la pantalla de carga y mostrar la interfaz
+  //La llama Blake cuando carga por completo el modelo, por lo que también establece el estado de la escena a jugando
+  loaded(){
+    $("#loadingScreen").fadeOut(1000);
+    $("#FruitIcon").fadeIn(1000);
+    $("#Messages").fadeIn(1000);
+    this.state = SceneStates.PLAYING;
+  }
+
+  //Función para manejar la caida del jugador al vacío. La llama Blake cuando termina su animación de caida
+  //Se esconde la interfaz del juego y se muestra la pantalla de muerte. También establece el correspondiente estado de la escena
   die(){
     $("#Messages").hide();
     $("#FruitIcon").hide();
@@ -726,6 +785,8 @@ class MyScene extends THREE.Scene {
     this.state = SceneStates.DEAD;
   }
 
+  //Función para la pantalla final. Esconde la interfaz del juego, muestra los resultados y establece el estado de la escena
+  //La llama Blake cuando completa su animación final
   end(){
     $("#Messages").hide();
     $("#FruitIcon").hide();

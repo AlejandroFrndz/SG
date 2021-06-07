@@ -9,3 +9,4 @@ Textura Skybox --> https://learnopengl.com/Advanced-OpenGL/Cubemaps
 Textura Frutas --> http://spanish.fansshare.com/gallery/photos/14095224/free-seamless-textures-seamless-red-apple-texture-texture/?displaying
 Imágen Frutas --> https://www.artstation.com/artwork/WK38R2
 Pantalla de Muerte --> Captura de pantalla del videojuego https://store.steampowered.com/app/570940/DARK_SOULS_REMASTERED/
+Pantalla de Carga --> https://codeburst.io/its-not-the-tech-it-s-the-ux-8e4b2b83cea0
