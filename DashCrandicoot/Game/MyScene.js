@@ -696,7 +696,7 @@ class MyScene extends THREE.Scene {
     }
     
     //Todas estas funciones solo están disponibles si se está jugando.
-    if(this.state = SceneStates.PLAYING){
+    if(this.state == SceneStates.PLAYING){
       //La tecla P activa o desactiva la cámara debug, solo si el modo debug está activo
       if(tecla == "P"){
         if(this.debug){

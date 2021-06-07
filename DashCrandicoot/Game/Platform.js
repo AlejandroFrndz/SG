@@ -3,7 +3,7 @@ import * as TWEEN from '../libs/tween.esm.js'
 
 class Platform extends THREE.Object3D{
     //Pequeño margen de gracia que se le deja alejarse a Blake del área concreta de la plataforma antes de caer, para evitar situaciones demasiado exactas que pueden frustrar a los jugadores
-    static get Margen() {return 0.25;}
+    static get Margen() {return 0.50;}
 
     //Constructor
     constructor(sizeX, sizeZ, dimension, dimensionColor){
