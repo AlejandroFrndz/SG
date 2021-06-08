@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <style>
+            .button {
+                background-color: #000000;
+                border: none;
+                color: #650505;
+                padding: 15px 32px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                position: absolute;
+                left: 45%;
+                top: 70%;
+                display: none;
+                border-style: solid;
+                border-radius: 4px;
+                border-color: #650505;
+                transition-duration: 0.4s;
+                font-weight: bold;
+            }
+
+            .button:hover{
+                background-color: #650505;
+                color: #000000;
+            }
+
+            .finalMessage{
+                color: white;
+                font-size: 2em;
+                font-weight: bold;
+            }
+        </style>
+        <title>Dash Crandicoot</title>
+        <meta charset="utf-8">
+        <link rel="icon" href="../imgs/favicon.ico" />
+        <script type="text/javascript" src="../libs/jquery.js"></script>
+        <script type="module" src="MyScene.js"></script>    
+        
+        <style>
+            body{
+                margin: 0;
+                overflow: hidden; 
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Pantalla de carga -->
+        <img src="../imgs/loading.gif" style="z-index: 10; width: 100%;" id="loadingScreen"/>
+
+        <!-- Pantalla de muerte y botón de reintentar que se muestra cuando se cae -->
+        <img src="../imgs/death.png" style="width: 100%; z-index: 10; display: none;" id="deathScreen"/>
+        <button type="button" onclick="window.location.reload()" class="button" id="restartButton">Try Again</button>
+
+        <!-- Contador de frutas que se muestra mientras se juega -->
+        <div style="position: absolute; left:150px; top:10px; font-size: 5em; color:white; display: none;" id="Messages"></div>
+        <img src="../imgs/apple.png" style="position: absolute; ;left:30px; top:10px; width: 100px; display: none;" id="FruitIcon"></img>
+
+        <!-- Mensajes de final del juego -->
+        <div class="finalMessage" style="position: absolute; left: 42%; top: 30%; display: none;" id="gracias">Thanks for playing!</div>
+        <img src="../imgs/apple.png" style="position: absolute; ;left:29%; top:47%; width: 80px; display: none;" id="finalFruitIcon"></img>
+        <div class="finalMessage" style="position: absolute; left: 35%; top: 50%; display: none;" id="recuentoFrutas"></div>
+        <img src="../imgs/crate-no-background.png" style="position: absolute; ;left:58%; top:47%; width: 150px; display: none;" id="finalCrateIcon"></img>
+        <div class="finalMessage" style="position: absolute; left: 66%; top: 50%; display: none;" id="recuentoCajas"></div>
+        <a href="../index.html" class="finalMessage" style="position: absolute; left: 47%; top: 63%; border: white 2px solid; border-radius: 10px; padding: 10px; text-decoration: none; display: none;" id="botonFinal">Quit</a>
+
+        <!-- Div which will hold the Output -->
+        <div id="WebGL-output">
+        </div>
+    </body>
+</html>
